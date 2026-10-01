@@ -23,7 +23,11 @@ pnpm start                   # prod: Express serves client/dist
 pnpm test                    # vitest in all packages
 pnpm --filter @durak/shared test bout.test.ts -t "<test name>"   # single test (no `--`, or the filter is ignored)
 pnpm lint && pnpm typecheck
+pnpm format                  # prettier --write .
 ```
+
+- Requires Node >= 22 and pnpm 10 (`packageManager` is pinned).
+- Server tests: unit tests sit next to the source (`room/Room.test.ts`, `socket/auth.test.ts`); socket-level integration tests live in `packages/server/test/` (e.g. `lobby.integration.test.ts`).
 
 - Dev: board at `http://localhost:5173/board`, phones at `http://<LAN-IP>:5173/play` (the server prints the join URL). The client connects to the game server on :3000 directly, not via a Vite proxy, so the server sees real client IPs (the board role is loopback-only).
 - `@durak/shared` is consumed as TypeScript source via the `development` export condition (Vite dev, `tsx --conditions=development`, Vitest `resolve.conditions`); production builds use `shared/dist`, so `pnpm build` builds `shared` first.
@@ -37,6 +41,7 @@ pnpm lint && pnpm typecheck
 - **Authoritative state is on the server only.** Clients send commands (intents) with acks; the server applies them through the engine and broadcasts **snapshots**: a personal `PlayerView` per player, a `PublicView` for the board. `game:event` messages exist only for animations/toasts.
 - **Anti-cheat boundary:** `server/src/game/projections.ts`. Hands of others, deck order, discard contents and session tokens never leave the server.
 - **Concurrency:** socket handlers stay synchronous between reading and writing state (no `await` in between), so throw-in races resolve first-come-first-served by message order.
+- **Server layout:** `server/src/room` holds the room state and lobby rules; `server/src/socket` holds the Socket.IO layer (`auth.ts` handshake/role, `playerHandlers.ts` / `boardHandlers.ts` per-role intents, `command.ts` zod-validate + ack wrapper, `broadcaster.ts` snapshot fan-out). New intents go through `command.ts` and the schemas in `shared/protocol`.
 - **Sessions:** `lobby:join` returns `playerId` + `sessionToken`; the client stores the token in `localStorage` and sends it in the handshake `auth` to reclaim its seat after a disconnect. One room per server.
 - **Board role** is accepted only from loopback (`127.0.0.1` / `::1`).
 - All client payloads are validated with zod schemas from `shared/protocol/schemas.ts`.
