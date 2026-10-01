@@ -12,6 +12,7 @@ export * from './engine/constants.js';
 export * from './engine/rng.js';
 export * from './engine/bout.js';
 export * from './engine/deck.js';
+export * from './engine/draw.js';
 export * from './engine/rules.js';
 export * from './engine/turnOrder.js';
 
