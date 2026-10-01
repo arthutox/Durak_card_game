@@ -2,6 +2,7 @@
 export * from './lib/result.js';
 
 // Domain
+export * from './domain/bout.js';
 export * from './domain/cards.js';
 export * from './domain/player.js';
 export * from './domain/table.js';
@@ -9,6 +10,7 @@ export * from './domain/table.js';
 // Rules engine (pure)
 export * from './engine/constants.js';
 export * from './engine/rng.js';
+export * from './engine/bout.js';
 export * from './engine/deck.js';
 export * from './engine/rules.js';
 export * from './engine/turnOrder.js';

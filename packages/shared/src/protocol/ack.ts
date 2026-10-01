@@ -2,8 +2,7 @@ import type { ErrorCode } from './errors.js';
 
 /** Every client → server command is acknowledged with one of these. */
 export type Ack<T> =
-  | { readonly ok: true; readonly data: T }
-  | { readonly ok: false; readonly error: ErrorCode };
+  { readonly ok: true; readonly data: T } | { readonly ok: false; readonly error: ErrorCode };
 
 export type AckFn<T> = (response: Ack<T>) => void;
 

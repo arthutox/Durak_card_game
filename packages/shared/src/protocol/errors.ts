@@ -15,6 +15,14 @@ export const ERROR_MESSAGES = {
   GAME_IN_PROGRESS: 'A game is in progress, please wait until it ends',
   ALREADY_JOINED: 'You have already joined',
   NOT_JOINED: 'Join the room first',
+  // game
+  NOT_YOUR_TURN: 'It is not your turn to do that',
+  CARD_NOT_IN_HAND: 'You do not hold this card',
+  CANNOT_BEAT: 'This card cannot beat that one',
+  INVALID_TARGET: 'Pick an uncovered attack card to defend against',
+  RANK_NOT_ON_TABLE: 'You can only add a card whose rank is already on the table',
+  TABLE_LIMIT: 'The table is full',
+  ILLEGAL_ACTION: 'This move is not allowed right now',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_MESSAGES;
