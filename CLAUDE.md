@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **Status:** Sprint 0 done — monorepo skeleton, lobby (join/leave/reconnect, localhost-only board), rule primitives (`deck`, `rules`, `turnOrder`) with tests, HostBoard/PlayerHand lobby screens. Next: sprint 2 (bout state machine in `shared/src/engine`). The full design is in `docs/ARCHITECTURE.md` — read it before implementing anything.
+> **Status:** Sprint 0 done — monorepo skeleton, lobby (join/leave/reconnect, localhost-only board), rule primitives (`deck`, `rules`, `turnOrder`) with tests, HostBoard/PlayerHand lobby screens. Sprint 1 in progress: bout state machine and hand refill done in `shared/src/engine`; next `createGame`/`applyAction`, turn passing, end of game, random-game simulation. The full design is in `docs/ARCHITECTURE.md` — read it before implementing anything.
 
 ## Project
 

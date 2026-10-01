@@ -35,8 +35,9 @@ export function refillHands(params: RefillParams): RefillResult {
   const hands: Record<PlayerId, readonly Card[]> = { ...params.hands };
   for (const id of drawOrder) {
     const hand = [...(hands[id] ?? [])];
+    const before = hand.length;
     while (hand.length < HAND_SIZE && stock.length > 0) hand.push(stock.pop()!);
-    hands[id] = hand;
+    if (hand.length > before) hands[id] = hand;
   }
   return { hands, stock };
 }

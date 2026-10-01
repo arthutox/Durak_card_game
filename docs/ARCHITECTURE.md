@@ -41,6 +41,7 @@ Items marked *(planned)* do not exist in the code yet.
 - 6 players × 6 cards = the whole deck. In that case the last dealt card is revealed as trump and stays in its owner's hand.
 - Nobody holds a trump → a random player attacks first.
 - An attacker with an empty hand (stock exhausted) is treated as having passed.
+- An attacker who holds cards but has nothing to throw in must still press "Pass": the engine never skips them on its own, so the UI must keep Pass visible (and the optional timer, if built, covers the stalled case).
 - The discard pile is face down: only its size is public.
 - In the lobby a disconnected player keeps the seat via the token; "Start" is unavailable while anyone is offline; "Leave" frees the seat.
 

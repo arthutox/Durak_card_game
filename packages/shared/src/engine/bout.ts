@@ -43,8 +43,18 @@ export function applyBoutAction(
   playerId: PlayerId,
   action: BoutAction,
 ): Result<BoutStep, ErrorCode> {
+  if (!isConsistent(state)) return err('ILLEGAL_ACTION');
   const result = dispatch(state, playerId, action);
   return result.ok ? ok(settle(result.value.state)) : result;
+}
+
+/** Guards against a corrupted state: both bout roles must be seated. */
+function isConsistent({ order, bout }: BoutState): boolean {
+  return (
+    bout.attackerId !== bout.defenderId &&
+    order.includes(bout.attackerId) &&
+    order.includes(bout.defenderId)
+  );
 }
 
 function dispatch(
@@ -62,6 +72,7 @@ function dispatch(
     case 'take':
       return take(state, playerId);
     default:
+      // Unreachable for validated input; guards against an unvalidated payload at runtime.
       return err('ILLEGAL_ACTION');
   }
 }
@@ -126,6 +137,8 @@ function pass(state: BoutState, playerId: PlayerId): Result<BoutStep, ErrorCode>
   const { bout } = state;
   if (!mayAttack(state, playerId)) return err('NOT_YOUR_TURN');
   if (state.table.length === 0) return err('ILLEGAL_ACTION');
+  // Out of cards means out of the bout: such a player counts as passed already.
+  if ((state.hands[playerId] ?? []).length === 0) return err('ILLEGAL_ACTION');
 
   const passed = bout.passed.includes(playerId) ? bout.passed : [...bout.passed, playerId];
 

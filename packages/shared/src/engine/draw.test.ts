@@ -93,4 +93,16 @@ describe('refillHands', () => {
     expect(result.hands['b']).toContainEqual(deck[0]);
     expect(result.hands['d']).toHaveLength(5);
   });
+
+  it('does not create an entry for a player without a hand when the stock is empty', () => {
+    const result = refillHands({
+      order: ['a', 'b'],
+      attackerId: 'a',
+      defenderId: 'b',
+      hands: { a: deck.slice(10, 16) },
+      stock: [],
+    });
+
+    expect(result.hands).toEqual({ a: deck.slice(10, 16) });
+  });
 });

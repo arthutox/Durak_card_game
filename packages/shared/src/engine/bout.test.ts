@@ -327,3 +327,32 @@ describe('applyBoutAction: attackers without cards', () => {
     expect(result.ok && result.value.state.bout.stage).toBe('open');
   });
 });
+
+describe('applyBoutAction: inconsistent state', () => {
+  it('rejects a bout whose roles are not seated at the table', () => {
+    const state = makeState({ bout: { defenderId: 'z' } });
+
+    const result = applyBoutAction(state, 'a', { type: 'attack', cardId: 'S7' });
+
+    expect(result).toEqual({ ok: false, error: 'ILLEGAL_ACTION' });
+  });
+
+  it('rejects a bout where one player is both attacker and defender', () => {
+    const state = makeState({ bout: { defenderId: 'a' } });
+
+    const result = applyBoutAction(state, 'a', { type: 'attack', cardId: 'S7' });
+
+    expect(result).toEqual({ ok: false, error: 'ILLEGAL_ACTION' });
+  });
+
+  it('a player who is out of cards cannot pass', () => {
+    const hands = { a: [c('D', 7)], b: [c('H', 6), c('H', 7)], c: [] };
+    const table = [{ attack: c('S', 7), defense: null }];
+
+    const result = applyBoutAction(makeState({ hands, table, bout: { stage: 'open' } }), 'c', {
+      type: 'pass',
+    });
+
+    expect(result).toEqual({ ok: false, error: 'ILLEGAL_ACTION' });
+  });
+});
