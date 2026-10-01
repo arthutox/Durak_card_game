@@ -1,0 +1,284 @@
+/* ---------- tokens ---------- */
+:root {
+  --felt: #0f3d2e;
+  --felt-dark: #0a2a20;
+  --panel: rgba(0, 0, 0, 0.28);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --text: #f3efe6;
+  --muted: rgba(243, 239, 230, 0.6);
+  --accent: #e8c26b;
+  --danger: #ff6b6b;
+  --ok: #7bed9f;
+  --radius: 14px;
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--text);
+  background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-dark) 100%) fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2 {
+  margin: 0 0 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+h1 {
+  font-size: 28px;
+  color: var(--accent);
+}
+
+h2 {
+  font-size: 20px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 13px;
+}
+
+/* ---------- building blocks ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.notice {
+  padding: 16px;
+  border-radius: var(--radius);
+  background: rgba(255, 107, 107, 0.12);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+}
+
+.button {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.button-primary {
+  color: #1b1405;
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.badge-warn {
+  color: var(--danger);
+  background: rgba(255, 107, 107, 0.15);
+}
+
+/* ---------- connection ---------- */
+.connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.connection-online .connection-dot {
+  background: var(--ok);
+}
+
+.connection-offline .connection-dot {
+  background: var(--danger);
+}
+
+/* ---------- player list ---------- */
+.player-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.player-row.is-me {
+  outline: 1px solid var(--accent);
+}
+
+.player-row.is-offline {
+  opacity: 0.55;
+}
+
+.seat-number {
+  width: 20px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.nickname {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- board (laptop) ---------- */
+.board {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.board-header,
+.hand-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.board-lobby {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+  gap: 24px;
+}
+
+.join-panel {
+  text-align: center;
+}
+
+.qr {
+  display: inline-block;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fff;
+  line-height: 0;
+}
+
+.join-url {
+  margin: 12px 0 4px;
+  font-family: ui-monospace, monospace;
+  font-size: 15px;
+  word-break: break-all;
+}
+
+/* ---------- hand (phone) ---------- */
+.hand {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.field input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  font: inherit;
+  font-size: 17px; /* ≥16px keeps iOS from zooming into the input */
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.color-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.swatch {
+  aspect-ratio: 1;
+  border: 3px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.swatch.is-selected {
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.4) inset;
+}
+
+.swatch:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.form-error {
+  margin: 0;
+  color: var(--danger);
+}
+
+@media (max-width: 760px) {
+  .board {
+    padding: 16px;
+  }
+
+  .board-lobby {
+    grid-template-columns: 1fr;
+  }
+}
