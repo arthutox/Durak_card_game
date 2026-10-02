@@ -38,9 +38,10 @@ export function registerPlayerHandlers(socket: GameSocket, { io, room, broadcast
     }
 
     broadcast.gameEvents(result.value.events);
-    broadcast.gameState();
-    // The phase flips to 'finished' with the last move.
+    // Room state first: clients reset their game view on a phase change, so the
+    // snapshot (with the outcome) must arrive after the phase flips to 'finished'.
     if (room.phase === 'finished') broadcast.roomState();
+    broadcast.gameState();
     return ackOk({});
   };
 

@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { makeCard } from '@durak/shared';
 import type { Card, PlayerView, TablePair } from '@durak/shared';
-import { attackableCardIds, canPass, canTake, defendTargets, myRole } from './handLogic';
+import {
+  attackableCardIds,
+  canPass,
+  canTake,
+  defendTargets,
+  hint,
+  myRole,
+  needsAttention,
+  shouldAutoPass,
+} from './handLogic';
 
 const c = makeCard;
 
@@ -104,5 +113,33 @@ describe('buttons', () => {
     expect(canPass(view('c', { table: [open] }))).toBe(false);
     expect(canPass(view('c', { table: [open], bout: { stage: 'open' } }))).toBe(true);
     expect(canPass(view('b', { table: [open] }))).toBe(false);
+  });
+});
+
+describe('defender takes the cards', () => {
+  const taking = { defenderTaking: true };
+
+  it('attackers are told and the Pass button is highlighted', () => {
+    const v = view('a', { table: [open], bout: taking });
+
+    expect(needsAttention(v)).toBe(true);
+    expect(hint(v)).toBe('B is taking the cards: throw in more or pass');
+    expect(needsAttention(view('a', { table: [open] }))).toBe(false);
+  });
+
+  it('auto-passes only when nothing can be thrown in', () => {
+    const nothing = [c('C', 9), c('C', 12)];
+    expect(shouldAutoPass(view('a', { hand: nothing, table: [open], bout: taking }))).toBe(true);
+    expect(shouldAutoPass(view('a', { table: [open], bout: taking }))).toBe(false); // holds a 7
+  });
+
+  it('does not auto-pass while the defender may still cover a card', () => {
+    expect(shouldAutoPass(view('a', { hand: [c('C', 9)], table: [open] }))).toBe(false);
+  });
+
+  it('auto-passes once everything is covered and no rank matches', () => {
+    const covered = [{ attack: c('S', 7), defense: c('S', 9) }];
+    expect(shouldAutoPass(view('a', { hand: [c('C', 12)], table: covered }))).toBe(true);
+    expect(shouldAutoPass(view('a', { hand: [c('D', 9)], table: covered }))).toBe(false);
   });
 });

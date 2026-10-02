@@ -621,3 +621,19 @@ h2 {
 .outcome {
   text-align: center;
 }
+
+@keyframes attention {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(232, 194, 107, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(232, 194, 107, 0);
+  }
+}
+
+.button.is-attention {
+  color: #1b1405;
+  background: var(--accent);
+  animation: attention 1s ease-in-out infinite;
+}

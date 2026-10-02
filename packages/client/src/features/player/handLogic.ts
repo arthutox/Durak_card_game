@@ -56,6 +56,21 @@ export function canTake(view: PlayerView): boolean {
   );
 }
 
+/**
+ * Pass automatically: the player may pass but has nothing left to add and no
+ * new rank can appear on the table (everything is covered, or the defender is
+ * taking). Waiting would only stall the bout.
+ */
+export function shouldAutoPass(view: PlayerView): boolean {
+  const settled = view.bout.defenderTaking || view.table.every((pair) => pair.defense !== null);
+  return canPass(view) && settled && attackableCardIds(view).size === 0;
+}
+
+/** The defender gave up: attackers should throw in more cards or pass. */
+export function needsAttention(view: PlayerView): boolean {
+  return view.bout.defenderTaking && canPass(view);
+}
+
 /** One line telling the player what to do. */
 export function hint(view: PlayerView): string {
   if (view.outcome) return '';
@@ -69,10 +84,14 @@ export function hint(view: PlayerView): string {
         ? `${nick(view.bout.attackerId)} is attacking you`
         : 'Drag a card onto an attack card to beat it, or take';
     case 'attacker':
+      if (view.bout.defenderTaking)
+        return `${nick(view.bout.defenderId)} is taking the cards: throw in more or pass`;
       return view.table.length === 0
         ? 'Your attack: drag a card to the table'
         : 'Add a card to the table, or pass';
     case 'thrower':
+      if (view.bout.defenderTaking)
+        return `${nick(view.bout.defenderId)} is taking the cards: throw in more or pass`;
       return 'You may throw in a card';
     case 'idle':
       return `${nick(view.bout.attackerId)} is attacking ${nick(view.bout.defenderId)}`;

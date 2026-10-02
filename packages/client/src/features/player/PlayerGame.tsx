@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -15,7 +15,15 @@ import { PLAYER_COLOR_HEX } from '../../components/playerColors';
 import { useHandStore } from '../../store/handStore';
 import { HandCard } from './HandCard';
 import { ATTACK_ZONE_ID, TableZone, targetId } from './TableZone';
-import { attackableCardIds, canPass, canTake, defendTargets, hint } from './handLogic';
+import {
+  attackableCardIds,
+  canPass,
+  canTake,
+  defendTargets,
+  hint,
+  needsAttention,
+  shouldAutoPass,
+} from './handLogic';
 import { playMove } from './playerSession';
 
 const TOAST_MS = 2500;
@@ -24,6 +32,14 @@ const TOAST_MS = 2500;
 export function PlayerGame({ view }: { view: PlayerView }) {
   const pending = useHandStore((s) => s.pendingMove);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
+
+  // One automatic pass per snapshot; the next snapshot re-evaluates.
+  const autoPassedAt = useRef<number | null>(null);
+  useEffect(() => {
+    if (pending || autoPassedAt.current === view.version || !shouldAutoPass(view)) return;
+    autoPassedAt.current = view.version;
+    void playMove({ kind: 'pass' });
+  }, [view, pending]);
 
   // Mouse for desktop testing; touch needs a short press so the page can still scroll.
   const sensors = useSensors(
@@ -125,7 +141,7 @@ function ActionBar({ view }: { view: PlayerView }) {
   return (
     <div className="action-bar">
       <button
-        className="button"
+        className={`button${needsAttention(view) ? ' is-attention' : ''}`}
         disabled={!canPass(view)}
         onClick={() => void playMove({ kind: 'pass' })}
       >

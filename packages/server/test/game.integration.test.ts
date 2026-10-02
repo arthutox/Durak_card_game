@@ -30,6 +30,7 @@ let url: string;
 let board: ClientSocket;
 let boardView: PublicView | null;
 const phones: Phone[] = [];
+const boardLog: string[] = [];
 const sockets: ClientSocket[] = [];
 
 beforeEach(async () => {
@@ -66,7 +67,12 @@ function send<E extends keyof ClientToServerEvents>(
 
 async function seatPlayers(names: readonly string[]): Promise<void> {
   board = open({ role: 'board' });
-  board.on('board:state', (view) => (boardView = view));
+  boardLog.length = 0;
+  board.on('board:state', (view) => {
+    boardView = view;
+    boardLog.push('board:state');
+  });
+  board.on('room:state', () => boardLog.push('room:state'));
   const colors = ['red', 'blue', 'green', 'teal'];
   for (const [i, name] of names.entries()) {
     const socket = open({ role: 'player' });
@@ -213,6 +219,8 @@ describe('game over Socket.IO', () => {
     await until(synced, 'final snapshots');
 
     expect(server.room.phase).toBe('finished');
+    // The outcome must be the *last* thing the board hears, after the phase change.
+    expect(boardLog.at(-1)).toBe('board:state');
     expect(boardView!.outcome).not.toBeNull();
     expect(phones.every((p) => p.view!.outcome !== null)).toBe(true);
 
