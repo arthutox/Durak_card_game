@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **Status:** Sprint 0 done — monorepo skeleton, lobby (join/leave/reconnect, localhost-only board), rule primitives (`deck`, `rules`, `turnOrder`) with tests, HostBoard/PlayerHand lobby screens. Sprint 1 done: bout state machine, hand refill, `createGame`/`applyAction`, turn passing, end of game and a random-game simulation live in `shared/src/engine`. Sprint 2 done: `host:*` and `game:*` commands, projections, `game:state`/`board:state`/`game:event`/`board:banner`, snapshots on reconnect, a full-game integration test. Next: Sprint 3 (board UI). The full design is in `docs/ARCHITECTURE.md` — read it before implementing anything.
+> **Status:** Sprint 0 done — monorepo skeleton, lobby (join/leave/reconnect, localhost-only board), rule primitives (`deck`, `rules`, `turnOrder`) with tests, HostBoard/PlayerHand lobby screens. Sprint 1 done: bout state machine, hand refill, `createGame`/`applyAction`, turn passing, end of game and a random-game simulation live in `shared/src/engine`. Sprint 2 done: `host:*` and `game:*` commands, projections, `game:state`/`board:state`/`game:event`/`board:banner`, snapshots on reconnect, a full-game integration test. Sprint 3 done: `HostBoard` shows the lobby, the game table (seats, stock + trump, discard, table pairs, status line), the `CANNOT_BEAT` banner, results and host buttons. Next: Sprint 4 (hand UI + drag-and-drop). The full design is in `docs/ARCHITECTURE.md` — read it before implementing anything.
 
 ## Project
 

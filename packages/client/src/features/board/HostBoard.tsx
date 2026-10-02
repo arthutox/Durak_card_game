@@ -1,29 +1,46 @@
-import { QRCodeSVG } from 'qrcode.react';
-import { MAX_PLAYERS, MIN_PLAYERS } from '@durak/shared';
+import { useState } from 'react';
 import { ConnectionBadge } from '../../components/ConnectionBadge';
-import { PlayerList } from '../../components/PlayerList';
+import { useGameStore } from '../../store/gameStore';
 import { useRoomStore } from '../../store/roomStore';
-import { useBoardSession } from './boardSession';
+import { BoardLobby } from './BoardLobby';
+import { BoutBanner } from './BoutBanner';
+import { GameTable } from './GameTable';
+import { Results } from './Results';
+import { sendHostCommand, useBoardSession } from './boardSession';
 
 /**
- * Laptop screen: the shared table everyone looks at.
- * Current scope (sprint 0): lobby — QR code to join and the list of seats.
- * The game table (deck, trump, bouts, discard) arrives in sprint 5.
+ * Laptop screen: the shared table everyone looks at. Lobby while seats fill
+ * up, then the game table; results and host buttons appear when it ends.
  */
 export function HostBoard() {
   useBoardSession();
   const connection = useRoomStore((s) => s.connection);
   const room = useRoomStore((s) => s.room);
+  const game = useGameStore((s) => s.game);
+  const [confirmAbort, setConfirmAbort] = useState(false);
 
-  const players = room?.players ?? [];
-  const allOnline = players.every((p) => p.online);
-  const canStart = players.length >= MIN_PLAYERS && allOnline;
+  const inGame = room?.phase !== 'lobby' && game !== null;
 
   return (
     <main className="board">
       <header className="board-header">
         <h1>Durak</h1>
-        <ConnectionBadge status={connection} />
+        <div className="header-actions">
+          {inGame && room?.phase === 'playing' && (
+            <button
+              className="button button-small"
+              onClick={() => {
+                if (!confirmAbort) return setConfirmAbort(true);
+                setConfirmAbort(false);
+                void sendHostCommand('host:abort');
+              }}
+              onBlur={() => setConfirmAbort(false)}
+            >
+              {confirmAbort ? 'Really end the game?' : 'End game'}
+            </button>
+          )}
+          <ConnectionBadge status={connection} />
+        </div>
       </header>
 
       {connection === 'offline' && room === null ? (
@@ -31,45 +48,14 @@ export function HostBoard() {
           The table screen only connects from this laptop (localhost). Make sure the server is
           running.
         </p>
+      ) : inGame ? (
+        <>
+          <GameTable game={game} />
+          <BoutBanner />
+          <Results game={game} />
+        </>
       ) : (
-        <section className="board-lobby">
-          <div className="panel join-panel">
-            <h2>Join the game</h2>
-            {room ? (
-              <>
-                <div className="qr">
-                  <QRCodeSVG value={room.joinUrl} size={240} marginSize={2} />
-                </div>
-                <p className="join-url">{room.joinUrl}</p>
-                <p className="muted">Your phone must be on the same Wi-Fi network</p>
-              </>
-            ) : (
-              <p className="muted">Loading…</p>
-            )}
-          </div>
-
-          <div className="panel">
-            <h2>
-              Players{' '}
-              <span className="muted">
-                {players.length}/{MAX_PLAYERS}
-              </span>
-            </h2>
-            <PlayerList players={players} />
-            <button
-              className="button button-primary"
-              disabled
-              title="Starting a game arrives in sprint 2"
-            >
-              Start game
-            </button>
-            <p className="muted small">
-              {canStart
-                ? 'Everyone is here. Starting a game arrives in the next sprints.'
-                : `At least ${MIN_PLAYERS} players are needed, all online.`}
-            </p>
-          </div>
-        </section>
+        <BoardLobby />
       )}
     </main>
   );
