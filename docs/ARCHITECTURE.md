@@ -139,7 +139,7 @@ nextActive(order, fromId, isActive): PlayerId | null;
 
 The rule primitives are used **both** by the server (validation) and by the client (highlighting valid targets).
 
-*(planned, sprint 1)*:
+Implemented (sprint 1):
 
 ```ts
 type Action =
@@ -153,7 +153,7 @@ applyAction(state: GameState, playerId: PlayerId, action: Action)
   : Result<{ state: GameState; events: GameEvent[] }, ErrorCode>;
 ```
 
-Internal split of the engine (SRP): `deck.ts` (create/shuffle/deal), `rules.ts` (primitives above), `turnOrder.ts` (next active player, first attacker), `bout.ts` *(planned)* (bout state machine), `draw.ts` *(planned)* (drawing), `game.ts` *(planned)* (`createGame`/`applyAction` facade).
+Internal split of the engine (SRP): `deck.ts` (create/shuffle/deal), `rules.ts` (primitives above), `turnOrder.ts` (next active player, first attacker), `bout.ts` (bout state machine), `draw.ts` (drawing), `game.ts` (`createGame`/`applyAction` facade).
 
 ### 2.4 Projections — the anti-cheat boundary (`server/src/game/projections.ts`, planned)
 
@@ -389,7 +389,7 @@ Every sprint ends with a working, verifiable result (definition of done).
 | # | Sprint | Scope | Done when | Status |
 |---|---|---|---|---|
 | 0 | **Skeleton + lobby** | pnpm monorepo, Express + Socket.IO, lobby join/leave, session-token reconnect, loopback-only board, `HostBoard`/`PlayerHand` lobby screens, rule primitives (deck, deal, trump, `canBeat`, `canThrowIn`, table limit, first attacker, turn order) | unit + integration tests green; a phone joins over the LAN | ✅ |
-| 1 | **Game engine** (TDD) | `createGame`; `applyAction`: attack, defend a specific card, pass (`primary → open`) with pass reset, take, beaten; drawing, turn passing, players leaving, loser/draw | a test for every rule in §1 + a simulation of random legal games: always 36 cards, every game terminates | ⏳ |
+| 1 | **Game engine** (TDD) | `createGame`; `applyAction`: attack, defend a specific card, pass (`primary → open`) with pass reset, take, beaten; drawing, turn passing, players leaving, loser/draw | a test for every rule in §1 + a simulation of random legal games: always 36 cards, every game terminates | ✅ |
 | 2 | **Game protocol** (server) | `host:*` commands, `game:attack/defend/pass/take`, projections, `game:state` / `board:state` / `game:event` / `board:banner`, snapshot on reconnect | integration tests: views do not leak; a race for the last slot gives one `ok` and one `TABLE_LIMIT`; a full game played by two scripted clients | |
 | 3 | **Board UI** (`HostBoard`) | table pairs, stock + trump, discard pile, players around the table (card count, role, pass, offline), banner, results, host buttons | the whole game is visible on the laptop | |
 | 4 | **Hand UI + drag-and-drop** (`PlayerHand`) | card fan, dnd-kit (touch/pointer sensors), attack zone and defend targets, valid-target highlighting, optimistic drop + rollback, toasts, Pass / Take buttons | a full game on two phones | |
