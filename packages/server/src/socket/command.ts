@@ -6,8 +6,11 @@ import type { GameSocket } from './types.js';
 
 type CommandName = keyof ClientToServerEvents;
 type PayloadOf<E extends CommandName> = Parameters<ClientToServerEvents[E]>[0];
-type AckDataOf<E extends CommandName> =
-  Parameters<ClientToServerEvents[E]>[1] extends (response: Ack<infer T>) => void ? T : never;
+type AckDataOf<E extends CommandName> = Parameters<ClientToServerEvents[E]>[1] extends (
+  response: Ack<infer T>,
+) => void
+  ? T
+  : never;
 
 /**
  * Registers a client → server command with the cross-cutting concerns applied

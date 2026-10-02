@@ -6,10 +6,11 @@
  *
  * Grows sprint by sprint; see docs/ARCHITECTURE.md §3 for the full protocol.
  */
+import type { GameEvent } from '../domain/game.js';
 import type { PlayerId } from '../domain/player.js';
 import type { AckFn } from './ack.js';
-import type { EmptyPayload, JoinPayload } from './schemas.js';
-import type { RoomView } from './views.js';
+import type { AttackPayload, DefendPayload, EmptyPayload, JoinPayload } from './schemas.js';
+import type { PlayerView, PublicView, RoomView } from './views.js';
 
 export interface JoinResult {
   readonly playerId: PlayerId;
@@ -22,6 +23,22 @@ export interface ClientToServerEvents {
   'lobby:join': (payload: JoinPayload, ack: AckFn<JoinResult>) => void;
   /** Player: free the seat (lobby only). */
   'lobby:leave': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
+  /** Player: open the bout or throw in a card. */
+  'game:attack': (payload: AttackPayload, ack: AckFn<EmptyPayload>) => void;
+  /** Player (defender): cover a specific attack card. */
+  'game:defend': (payload: DefendPayload, ack: AckFn<EmptyPayload>) => void;
+  /** Player (attacker): nothing more to add. */
+  'game:pass': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
+  /** Player (defender): give up and take the table. */
+  'game:take': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
+  /** Board: start a game with everyone in the lobby. */
+  'host:start': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
+  /** Board: abandon the running game and return to the lobby. */
+  'host:abort': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
+  /** Board: new game with the same players. */
+  'host:rematch': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
+  /** Board: back to the lobby after a finished game. */
+  'host:toLobby': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
 }
 
 export interface ServerToClientEvents {
@@ -31,6 +48,14 @@ export interface ServerToClientEvents {
   'session:invalid': () => void;
   /** Sent to this phone once its token has been accepted (join or reconnect). */
   'session:restored': (session: { playerId: PlayerId }) => void;
+  /** Personal snapshot after every game change and on reconnect. */
+  'game:state': (view: PlayerView) => void;
+  /** Public snapshot for the board. */
+  'board:state': (view: PublicView) => void;
+  /** Cosmetic only (animations, toasts); clients never derive state from it. */
+  'game:event': (event: GameEvent) => void;
+  /** Board only: a fun message for a rejected defense. */
+  'board:banner': (banner: { playerId: PlayerId; kind: 'cannot_beat' }) => void;
 }
 
 /** Per-socket data the server attaches after the handshake. */

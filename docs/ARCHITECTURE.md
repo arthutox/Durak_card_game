@@ -77,8 +77,7 @@ In commands the client sends only a `CardId`; the server looks the card up in th
 interface Room {
   phase: 'lobby' | 'playing' | 'finished';
   seats: Seat[];                    // order = join order = clockwise
-  game: GameState | null;           // (planned)
-  result: GameResult | null;        // (planned) for the results screen / rematch
+  game: GameState | null;           // outcome lives in game.outcome; phase becomes 'finished'
 }
 
 interface Seat {
@@ -89,7 +88,7 @@ interface Seat {
   socketId: string | null;          // null ⇒ "offline"
 }
 
-// --- Game: plain data, changed only by the engine (shared/src/engine) — (planned) ---
+// --- Game: plain data, changed only by the engine (shared/src/engine) ---
 interface GameState {
   version: number;                  // monotonic, incremented on every change
   deck: Card[];                     // SECRET: stock order; deck[0] is the trump card (drawn last)
@@ -155,7 +154,7 @@ applyAction(state: GameState, playerId: PlayerId, action: Action)
 
 Internal split of the engine (SRP): `deck.ts` (create/shuffle/deal), `rules.ts` (primitives above), `turnOrder.ts` (next active player, first attacker), `bout.ts` (bout state machine), `draw.ts` (drawing), `game.ts` (`createGame`/`applyAction` facade).
 
-### 2.4 Projections — the anti-cheat boundary (`server/src/game/projections.ts`, planned)
+### 2.4 Projections — the anti-cheat boundary (`server/src/game/projections.ts`)
 
 ```ts
 toPlayerView(state: GameState, room: Room, viewer: PlayerId): PlayerView;
@@ -187,7 +186,7 @@ interface RoomView {                         // lobby — visible to everyone (i
   joinUrl: string;                           // for the QR code on the board
 }
 
-interface PublicView {                       // (planned)
+interface PublicView {
   version: number;
   players: Array<{
     id: PlayerId; nickname: string; color: PlayerColor;
@@ -201,7 +200,7 @@ interface PublicView {                       // (planned)
   outcome: GameState['outcome'];
 }
 
-interface PlayerView extends PublicView {    // (planned)
+interface PlayerView extends PublicView {
   me: { id: PlayerId; hand: Card[] };
 }
 ```
@@ -223,7 +222,7 @@ Derived data are **selectors, not fields** (DRY, single source of truth): `myRol
 - `role: 'board'` is accepted **only from loopback** (`127.0.0.1`, `::1`, `::ffff:127.0.0.1`); otherwise `connect_error` with `FORBIDDEN`.
 - In development the client connects to the game server (:3000) directly rather than through a Vite proxy, so the server sees real client addresses.
 - A player with a valid `sessionToken` is reattached to their seat on connect (reconnect). Socket.IO repeats the handshake with the same `auth` callback on every reconnect. The newest connection wins: an older socket holding the same seat is disconnected.
-- Socket.IO rooms: `board`, `players`, `player:<playerId>` *(planned, per-player snapshot delivery)*.
+- Socket.IO rooms: `board`, `players`, `player:<playerId>` (snapshots go to each seat's socket directly).
 
 ### 3.2 Client → Server (commands)
 
@@ -233,14 +232,14 @@ Every command is acknowledged: `(res: Ack<T>) => void`, where `Ack<T> = { ok: tr
 |---|---|---|---|---|
 | `lobby:join` | player | `{ nickname: string; color: PlayerColor }` | `{ playerId; sessionToken }` | `NICKNAME_INVALID`, `NICKNAME_TAKEN`, `COLOR_TAKEN`, `ROOM_FULL`, `GAME_IN_PROGRESS`, `ALREADY_JOINED` |
 | `lobby:leave` | player | `{}` | `{}` | `NOT_JOINED`, `GAME_IN_PROGRESS` |
-| `game:attack` *(planned)* | player | `{ cardId: CardId }` | `{}` | `NOT_IN_HAND`, `NOT_YOUR_TURN`, `PRIORITY_ATTACKER_ONLY`, `RANK_NOT_ON_TABLE`, `TABLE_LIMIT` |
-| `game:defend` *(planned)* | player | `{ cardId: CardId; targetAttackIndex: number }` | `{}` | `NOT_DEFENDER`, `NOT_IN_HAND`, `TARGET_INVALID`, `TARGET_ALREADY_COVERED`, `CANNOT_BEAT`, `ALREADY_TAKING` |
-| `game:pass` *(planned)* | player | `{}` | `{}` | `NOT_AN_ATTACKER`, `PRIORITY_ATTACKER_ONLY`, `TABLE_EMPTY`, `ALREADY_PASSED` |
-| `game:take` *(planned)* | player | `{}` | `{}` | `NOT_DEFENDER`, `NOTHING_TO_TAKE`, `ALREADY_TAKING` |
-| `host:start` *(planned)* | board | `{}` | `{}` | `NOT_ENOUGH_PLAYERS`, `PLAYERS_OFFLINE`, `GAME_IN_PROGRESS` |
-| `host:abort` *(planned)* | board | `{}` | `{}` | `NO_GAME` |
-| `host:rematch` *(planned)* | board | `{}` | `{}` | `NOT_FINISHED`, `PLAYERS_OFFLINE` |
-| `host:toLobby` *(planned)* | board | `{}` | `{}` | `NOT_FINISHED` |
+| `game:attack` | player | `{ cardId: CardId }` | `{}` | `NOT_IN_HAND`, `NOT_YOUR_TURN`, `PRIORITY_ATTACKER_ONLY`, `RANK_NOT_ON_TABLE`, `TABLE_LIMIT` |
+| `game:defend` | player | `{ cardId: CardId; targetAttackIndex: number }` | `{}` | `NOT_DEFENDER`, `NOT_IN_HAND`, `TARGET_INVALID`, `TARGET_ALREADY_COVERED`, `CANNOT_BEAT`, `ALREADY_TAKING` |
+| `game:pass` | player | `{}` | `{}` | `NOT_AN_ATTACKER`, `PRIORITY_ATTACKER_ONLY`, `TABLE_EMPTY`, `ALREADY_PASSED` |
+| `game:take` | player | `{}` | `{}` | `NOT_DEFENDER`, `NOTHING_TO_TAKE`, `ALREADY_TAKING` |
+| `host:start` | board | `{}` | `{}` | `NOT_ENOUGH_PLAYERS`, `PLAYERS_OFFLINE`, `GAME_IN_PROGRESS` |
+| `host:abort` | board | `{}` | `{}` | `NO_GAME` |
+| `host:rematch` | board | `{}` | `{}` | `NOT_FINISHED`, `PLAYERS_OFFLINE` |
+| `host:toLobby` | board | `{}` | `{}` | `NOT_FINISHED` |
 
 Any payload that fails its zod schema → `VALIDATION`. An unexpected exception in a handler is logged and answered with `INTERNAL`. Handlers are registered per role, so a socket only has the commands of its own role (the board has no player commands, phones have no `host:*` commands).
 
@@ -255,23 +254,21 @@ Why there is no `play_card` / `deal_cards` / `successful_defense` from the origi
 | `room:state` | everyone | `RoomView` | any change in the lobby, presence or phase |
 | `session:restored` | socket | `{ playerId }` | the handshake token was accepted (reconnect) |
 | `session:invalid` | socket | — | unknown token (e.g. the server restarted) → the client clears `localStorage` |
-| `game:state` *(planned)* | `player:<id>` | `PlayerView` | after every game change, on reconnect |
-| `board:state` *(planned)* | `board` | `PublicView` | after every game change, when the board connects |
-| `game:event` *(planned)* | `players` + `board` | `GameEvent` | animations/toasts (does not change client state) |
-| `board:banner` *(planned)* | `board` | `{ playerId; kind: 'cannot_beat' }` | an invalid defense attempt (fun message) |
+| `game:state` | `player:<id>` | `PlayerView` | after every game change, on reconnect |
+| `board:state` | `board` | `PublicView` | after every game change, when the board connects |
+| `game:event` | `players` + `board` | `GameEvent` | animations/toasts (does not change client state) |
+| `board:banner` | `board` | `{ playerId; kind: 'cannot_beat' }` | an invalid defense attempt (fun message) |
 
 ```ts
-type GameEvent =
-  | { type: 'game_started'; firstAttackerId: PlayerId; trumpCard: Card }
-  | { type: 'attacked'; playerId: PlayerId; card: Card }
-  | { type: 'defended'; playerId: PlayerId; card: Card; targetAttackIndex: number }
-  | { type: 'passed'; playerId: PlayerId }
-  | { type: 'take_declared'; playerId: PlayerId }
-  | { type: 'bout_beaten' }
-  | { type: 'cards_taken'; playerId: PlayerId; count: number }
-  | { type: 'cards_drawn'; playerId: PlayerId; count: number } // never the cards themselves!
-  | { type: 'player_finished'; playerId: PlayerId }
-  | { type: 'game_over'; outcome: NonNullable<GameState['outcome']> };
+type GameEvent =                      // shared/src/domain/game.ts
+  | { type: 'attack'; playerId; card }
+  | { type: 'defend'; playerId; card; targetAttackIndex }
+  | { type: 'pass'; playerId }
+  | { type: 'take'; playerId }
+  | { type: 'bout_beaten'; defenderId }
+  | { type: 'bout_taken'; defenderId; count }
+  | { type: 'player_finished'; playerId }
+  | { type: 'game_over'; outcome };   // never contains hidden cards beyond the table
 ```
 
 Order on the server after a successful command: `applyAction` → store state → emit `game:event`(s) → emit snapshots. The client applies only snapshots; events are purely cosmetic.
@@ -282,14 +279,14 @@ Order on the server after a successful command: `applyAction` → store state �
 export interface ClientToServerEvents {
   'lobby:join':  (p: JoinPayload, ack: AckFn<JoinResult>) => void;
   'lobby:leave': (p: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
-  // planned: 'game:attack' | 'game:defend' | 'game:pass' | 'game:take' | 'host:*'
+  // 'game:attack' | 'game:defend' | 'game:pass' | 'game:take' | 'host:start' | 'host:abort' | 'host:rematch' | 'host:toLobby'
 }
 
 export interface ServerToClientEvents {
   'room:state':       (v: RoomView) => void;
   'session:invalid':  () => void;
   'session:restored': (s: { playerId: PlayerId }) => void;
-  // planned: 'game:state' | 'board:state' | 'game:event' | 'board:banner'
+  // 'game:state' | 'board:state' | 'game:event' | 'board:banner'
 }
 
 // server: new Server<ClientToServerEvents, ServerToClientEvents, {}, SocketData>(httpServer)
@@ -298,7 +295,7 @@ export interface ServerToClientEvents {
 
 On the server every command is registered through `onCommand(socket, event, schema, handler)` (`server/src/socket/command.ts`), which applies validation, the guaranteed ack and error handling in one place.
 
-### 3.5 Invalid-move UX and FCFS races *(planned)*
+### 3.5 Invalid-move UX and FCFS races
 
 1. While dragging, the phone highlights valid targets (`validDefenseTargets` / `canThrowIn` from `shared/engine/rules`).
 2. On drop the card visually "sticks" to the target (`pendingMove`) and the command is sent.
@@ -332,14 +329,14 @@ durak/
     │       │   ├── deck.ts           # createDeck, shuffle, deal
     │       │   ├── rules.ts          # canBeat, canThrowIn, tableLimit, validDefenseTargets
     │       │   ├── turnOrder.ts      # nextActive, firstAttacker
-    │       │   ├── bout.ts / draw.ts / game.ts   # (planned) bout state machine, drawing, facade
+    │       │   ├── bout.ts / draw.ts / game.ts   # bout state machine, drawing, facade
     │       │   └── *.test.ts
     │       ├── protocol/
     │       │   ├── ack.ts            # Ack<T>, ackOk, ackError
     │       │   ├── errors.ts         # ErrorCode + user-facing texts
     │       │   ├── events.ts         # ClientToServerEvents / ServerToClientEvents
     │       │   ├── schemas.ts        # zod schemas for payloads and the handshake
-    │       │   └── views.ts          # RoomView (PlayerView, PublicView planned)
+    │       │   └── views.ts          # RoomView, PublicView, PlayerView
     │       └── index.ts
     ├── server/                       # @durak/server
     │   ├── src/
@@ -351,7 +348,7 @@ durak/
     │   │   ├── room/
     │   │   │   ├── Room.ts           # the only stateful object: lobby, seats, sessions
     │   │   │   └── lobbyRules.ts     # nickname normalization and uniqueness
-    │   │   ├── game/projections.ts   # (planned) toPlayerView / toPublicView
+    │   │   ├── game/projections.ts   # toPlayerView / toPublicView
     │   │   └── socket/
     │   │       ├── types.ts          # typed Server/Socket, channel names
     │   │       ├── auth.ts           # handshake: role, token, loopback check
@@ -390,7 +387,7 @@ Every sprint ends with a working, verifiable result (definition of done).
 |---|---|---|---|---|
 | 0 | **Skeleton + lobby** | pnpm monorepo, Express + Socket.IO, lobby join/leave, session-token reconnect, loopback-only board, `HostBoard`/`PlayerHand` lobby screens, rule primitives (deck, deal, trump, `canBeat`, `canThrowIn`, table limit, first attacker, turn order) | unit + integration tests green; a phone joins over the LAN | ✅ |
 | 1 | **Game engine** (TDD) | `createGame`; `applyAction`: attack, defend a specific card, pass (`primary → open`) with pass reset, take, beaten; drawing, turn passing, players leaving, loser/draw | a test for every rule in §1 + a simulation of random legal games: always 36 cards, every game terminates | ✅ |
-| 2 | **Game protocol** (server) | `host:*` commands, `game:attack/defend/pass/take`, projections, `game:state` / `board:state` / `game:event` / `board:banner`, snapshot on reconnect | integration tests: views do not leak; a race for the last slot gives one `ok` and one `TABLE_LIMIT`; a full game played by two scripted clients | |
+| 2 | **Game protocol** (server) | `host:*` commands, `game:attack/defend/pass/take`, projections, `game:state` / `board:state` / `game:event` / `board:banner`, snapshot on reconnect | integration tests: views do not leak; the last-slot race is covered at engine level (first-come-first-served, `TABLE_LIMIT`); a full game played by three scripted clients | ✅ |
 | 3 | **Board UI** (`HostBoard`) | table pairs, stock + trump, discard pile, players around the table (card count, role, pass, offline), banner, results, host buttons | the whole game is visible on the laptop | |
 | 4 | **Hand UI + drag-and-drop** (`PlayerHand`) | card fan, dnd-kit (touch/pointer sensors), attack zone and defend targets, valid-target highlighting, optimistic drop + rollback, toasts, Pass / Take buttons | a full game on two phones | |
 | 5 | **Polish** | animations, reconnect UX, playtest on 3–6 phones, README with GIF/screenshots, quieter test logs; *optional:* priority/turn timer | ready for the portfolio | |

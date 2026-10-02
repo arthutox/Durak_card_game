@@ -4,8 +4,18 @@ import type { ClientToServerEvents, ServerToClientEvents, SocketData } from '@du
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 type InterServerEvents = {};
 
-export type GameServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
-export type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
+export type GameServer = Server<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData
+>;
+export type GameSocket = Socket<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData
+>;
 
 /** Socket.IO rooms used for targeted broadcasts. */
 export const CHANNELS = {

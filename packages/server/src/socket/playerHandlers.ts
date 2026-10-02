@@ -1,4 +1,12 @@
-import { ackError, ackOk, emptyPayloadSchema, joinPayloadSchema } from '@durak/shared';
+import {
+  ackError,
+  ackOk,
+  attackPayloadSchema,
+  defendPayloadSchema,
+  emptyPayloadSchema,
+  joinPayloadSchema,
+} from '@durak/shared';
+import type { Action, Ack, EmptyPayload } from '@durak/shared';
 import { logger } from '../logger.js';
 import type { Room } from '../room/Room.js';
 import { handshakeSessionToken } from './auth.js';
@@ -17,6 +25,33 @@ interface Context {
 export function registerPlayerHandlers(socket: GameSocket, { io, room, broadcast }: Context): void {
   restoreSession(socket, { io, room, broadcast });
   socket.emit('room:state', room.toView());
+
+  /** Runs a game move for this socket's player and fans out the result. */
+  const play = (action: Action): Ack<EmptyPayload> => {
+    const { playerId } = socket.data;
+    if (!playerId) return ackError('NOT_JOINED');
+
+    const result = room.act(playerId, action);
+    if (!result.ok) {
+      if (result.error === 'CANNOT_BEAT') broadcast.cannotBeat(playerId);
+      return ackError(result.error);
+    }
+
+    broadcast.gameEvents(result.value.events);
+    broadcast.gameState();
+    // The phase flips to 'finished' with the last move.
+    if (room.phase === 'finished') broadcast.roomState();
+    return ackOk({});
+  };
+
+  onCommand(socket, 'game:attack', attackPayloadSchema, ({ cardId }) =>
+    play({ type: 'attack', cardId }),
+  );
+  onCommand(socket, 'game:defend', defendPayloadSchema, ({ cardId, targetAttackIndex }) =>
+    play({ type: 'defend', cardId, targetAttackIndex }),
+  );
+  onCommand(socket, 'game:pass', emptyPayloadSchema, () => play({ type: 'pass' }));
+  onCommand(socket, 'game:take', emptyPayloadSchema, () => play({ type: 'take' }));
 
   onCommand(socket, 'lobby:join', joinPayloadSchema, (payload) => {
     if (socket.data.playerId) return ackError('ALREADY_JOINED');
@@ -51,6 +86,7 @@ export function registerPlayerHandlers(socket: GameSocket, { io, room, broadcast
     if (seat) {
       logger.info('player offline', { playerId: seat.playerId });
       broadcast.roomState();
+      broadcast.gameState();
     }
   });
 }
@@ -78,4 +114,5 @@ function restoreSession(socket: GameSocket, { io, room, broadcast }: Context): v
   socket.emit('session:restored', { playerId: seat.playerId });
   logger.info('player reconnected', { playerId: seat.playerId });
   broadcast.roomState();
+  broadcast.gameState();
 }

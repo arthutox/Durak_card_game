@@ -33,14 +33,17 @@ export function createGameServer(config: ServerConfig, joinUrl: string): GameSer
   const httpServer = createServer(app);
   // In dev the page comes from Vite (another port), so allow cross-origin;
   // in production Express serves the page and everything is same-origin.
-  const io: GameServer = new Server(httpServer, config.isProduction ? {} : { cors: { origin: true } });
+  const io: GameServer = new Server(
+    httpServer,
+    config.isProduction ? {} : { cors: { origin: true } },
+  );
 
   const room = new Room({ generateId: randomUUID, joinUrl });
   const broadcast = createBroadcaster(io, room);
 
   io.use(authenticate);
   io.on('connection', (socket) => {
-    if (socket.data.role === 'board') registerBoardHandlers(socket, { room });
+    if (socket.data.role === 'board') registerBoardHandlers(socket, { room, broadcast });
     else registerPlayerHandlers(socket, { io, room, broadcast });
   });
 

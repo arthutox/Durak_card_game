@@ -1,6 +1,18 @@
-import { MAX_PLAYERS, err, ok } from '@durak/shared';
+import {
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+  applyAction,
+  createGame,
+  defaultRng,
+  err,
+  ok,
+} from '@durak/shared';
 import type {
+  Action,
+  ActionResult,
   ErrorCode,
+  GameState,
+  Rng,
   JoinPayload,
   PlayerColor,
   PlayerId,
@@ -25,6 +37,8 @@ export interface RoomDeps {
   /** UUID generator (injected so tests can be deterministic). */
   readonly generateId: () => string;
   readonly joinUrl: string;
+  /** Randomness for shuffling and the first attacker (injected for deterministic tests). */
+  readonly rng?: Rng;
 }
 
 export interface ResumeResult {
@@ -41,6 +55,7 @@ export interface ResumeResult {
 export class Room {
   #phase: RoomPhase = 'lobby';
   readonly #seats: Seat[] = [];
+  #game: GameState | null = null;
 
   constructor(private readonly deps: RoomDeps) {}
 
@@ -48,8 +63,66 @@ export class Room {
     return this.#phase;
   }
 
+  /** The running (or just finished) game; null in the lobby. */
+  get game(): GameState | null {
+    return this.#game;
+  }
+
   get seats(): readonly Seat[] {
     return this.#seats;
+  }
+
+  /** Starts a game with everyone seated. Host command. */
+  startGame(): Result<GameState, ErrorCode> {
+    if (this.#phase !== 'lobby') return err('GAME_IN_PROGRESS');
+    return this.#beginGame();
+  }
+
+  /** New game with the same players after a finished one. */
+  rematch(): Result<GameState, ErrorCode> {
+    if (this.#phase !== 'finished') return err('NOT_FINISHED');
+    return this.#beginGame();
+  }
+
+  /** Drops the running game and returns to the lobby (seats are kept). */
+  abort(): Result<void, ErrorCode> {
+    if (this.#phase !== 'playing') return err('NO_GAME');
+    this.#toLobby();
+    return ok(undefined);
+  }
+
+  toLobby(): Result<void, ErrorCode> {
+    if (this.#phase !== 'finished') return err('NOT_FINISHED');
+    this.#toLobby();
+    return ok(undefined);
+  }
+
+  /** Applies a player's move through the engine; the phase follows the outcome. */
+  act(playerId: PlayerId, action: Action): Result<ActionResult, ErrorCode> {
+    if (!this.#game || this.#phase !== 'playing') return err('NO_GAME');
+    const result = applyAction(this.#game, playerId, action);
+    if (!result.ok) return result;
+
+    this.#game = result.value.state;
+    if (this.#game.outcome !== null) this.#phase = 'finished';
+    return result;
+  }
+
+  #beginGame(): Result<GameState, ErrorCode> {
+    if (this.#seats.length < MIN_PLAYERS) return err('NOT_ENOUGH_PLAYERS');
+    if (this.#seats.some((seat) => seat.socketId === null)) return err('PLAYERS_OFFLINE');
+
+    this.#game = createGame(
+      this.#seats.map((seat) => seat.playerId),
+      this.deps.rng ?? defaultRng,
+    );
+    this.#phase = 'playing';
+    return ok(this.#game);
+  }
+
+  #toLobby(): void {
+    this.#game = null;
+    this.#phase = 'lobby';
   }
 
   join(socketId: string, payload: JoinPayload): Result<Seat, ErrorCode> {
@@ -98,6 +171,10 @@ export class Room {
     const seat = this.findBySocket(socketId);
     if (seat) seat.socketId = null;
     return seat ?? null;
+  }
+
+  findById(playerId: PlayerId): Seat | undefined {
+    return this.#seats.find((seat) => seat.playerId === playerId);
   }
 
   findBySocket(socketId: string): Seat | undefined {

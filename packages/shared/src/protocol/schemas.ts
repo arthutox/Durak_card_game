@@ -4,6 +4,8 @@
  * because a client is untrusted (anyone on the LAN can open a socket).
  */
 import { z } from 'zod';
+import { isCardId } from '../domain/cards.js';
+import type { CardId } from '../domain/cards.js';
 import { PLAYER_COLORS } from '../domain/player.js';
 
 /** Payload of commands that carry no data. Extra keys are rejected. */
@@ -16,6 +18,20 @@ export const joinPayloadSchema = z.strictObject({
   color: z.enum(PLAYER_COLORS),
 });
 export type JoinPayload = z.infer<typeof joinPayloadSchema>;
+
+const cardIdSchema = z
+  .string()
+  .refine(isCardId)
+  .transform((id) => id as CardId);
+
+export const attackPayloadSchema = z.strictObject({ cardId: cardIdSchema });
+export type AttackPayload = z.infer<typeof attackPayloadSchema>;
+
+export const defendPayloadSchema = z.strictObject({
+  cardId: cardIdSchema,
+  targetAttackIndex: z.number().int().min(0).max(5),
+});
+export type DefendPayload = z.infer<typeof defendPayloadSchema>;
 
 /** Socket.IO handshake `auth` object. */
 export const handshakeAuthSchema = z.discriminatedUnion('role', [

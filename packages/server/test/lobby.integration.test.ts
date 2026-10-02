@@ -130,7 +130,9 @@ describe('lobby over Socket.IO', () => {
     await join(phone, 'Artur', 'red');
 
     const emptied = nextRoomState(board, (v) => v.players.length === 0);
-    const ack = await new Promise<Ack<unknown>>((resolve) => phone.emit('lobby:leave', {}, resolve));
+    const ack = await new Promise<Ack<unknown>>((resolve) =>
+      phone.emit('lobby:leave', {}, resolve),
+    );
 
     expect(ack.ok).toBe(true);
     await emptied;

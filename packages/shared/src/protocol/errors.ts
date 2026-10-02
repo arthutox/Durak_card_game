@@ -23,6 +23,11 @@ export const ERROR_MESSAGES = {
   RANK_NOT_ON_TABLE: 'You can only add a card whose rank is already on the table',
   TABLE_LIMIT: 'The table is full',
   ILLEGAL_ACTION: 'This move is not allowed right now',
+  NO_GAME: 'There is no game in progress',
+  // host
+  NOT_ENOUGH_PLAYERS: 'At least 2 players are needed to start',
+  PLAYERS_OFFLINE: 'Some players are offline',
+  NOT_FINISHED: 'The game is not finished yet',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_MESSAGES;
