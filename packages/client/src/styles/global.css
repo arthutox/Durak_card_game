@@ -637,3 +637,67 @@ h2 {
   background: var(--accent);
   animation: attention 1s ease-in-out infinite;
 }
+
+/* ---------- motion ---------- */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.pair > .card,
+.pair-defense .card {
+  animation: card-in 0.25s ease-out;
+}
+
+.hand-card .card {
+  animation: pop-in 0.2s ease-out;
+}
+
+.results,
+.outcome {
+  animation: pop-in 0.25s ease-out;
+}
+
+/* Centered with transform, so fade only: a scale would shift them sideways. */
+.banner,
+.toast {
+  animation: fade-in 0.25s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.seat {
+  transition:
+    box-shadow 0.25s,
+    opacity 0.25s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

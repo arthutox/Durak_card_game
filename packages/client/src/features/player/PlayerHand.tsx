@@ -31,7 +31,14 @@ export function PlayerHand() {
       {room === null ? (
         <p className="muted">Connecting to the table…</p>
       ) : meId !== null && room.phase !== 'lobby' && view !== null ? (
-        <PlayerGame view={view} />
+        <>
+          <PlayerGame view={view} />
+          {connection !== 'online' && (
+            <div className="overlay" role="alert">
+              <p className="panel">Connection lost — reconnecting…</p>
+            </div>
+          )}
+        </>
       ) : meId !== null ? (
         <WaitingRoom room={room} meId={meId} />
       ) : room.phase !== 'lobby' ? (

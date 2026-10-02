@@ -179,7 +179,7 @@ Board: **http://localhost:3000/board**; phones join via the QR code (`http://<la
 | 2 | Game protocol: move commands, per-player snapshots, projections | ✅ |
 | 3 | Board screen: cards on the table, stock, trump, discard pile, players, results | ✅ |
 | 4 | Hand screen: card drag-and-drop, playable-card highlighting, Pass and Take buttons | ✅ first playtest done, fixes ongoing |
-| 5 | Finishing touches: animations, playtest on 3–6 phones, GIF in the README, optional turn timer | ⏳ |
+| 5 | Finishing touches: card animations and reconnect overlay ✅; still open: playtest on 3–6 phones, GIF in the README, optional turn timer | ⏳ |
 
 ## Rules in short
 
