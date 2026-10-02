@@ -6,7 +6,7 @@ import type { AddressInfo } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { io as connect } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
-import { canThrowIn, remainingSlots, validDefenseTargets } from '@durak/shared';
+import { canBeat, canThrowIn, remainingSlots, validDefenseTargets } from '@durak/shared';
 import type {
   Ack,
   ClientToServerEvents,
@@ -193,14 +193,17 @@ describe('game over Socket.IO', () => {
 
     const attacker = phones.find((p) => p.view!.me.id === p.view!.bout.attackerId)!;
     const defender = phones.find((p) => p !== attacker)!;
-    await send(attacker.socket, 'game:attack', { cardId: attacker.view!.me.hand[0]!.id });
+    // Pick an attack card and a defense card that cannot beat it, so the test never skips.
+    const { trumpSuit } = attacker.view!;
+    const pairs = attacker.view!.me.hand.flatMap((attack) =>
+      defender.view!.me.hand.map((defense) => ({ attack, defense })),
+    );
+    const mismatch = pairs.find(({ attack, defense }) => !canBeat(attack, defense, trumpSuit));
+    if (!mismatch) throw new Error('no non-beating pair in this deal: pick another approach');
+    const loser = mismatch.defense;
+    await send(attacker.socket, 'game:attack', { cardId: mismatch.attack.id });
     await until(synced, 'attack visible');
 
-    const target = defender.view!;
-    const loser = target.me.hand.find(
-      (card) => validDefenseTargets(card, target.table, target.trumpSuit).length === 0,
-    );
-    if (!loser) return; // every card beats it: nothing to reject in this deal
     const ack = await send(defender.socket, 'game:defend', {
       cardId: loser.id,
       targetAttackIndex: 0,
