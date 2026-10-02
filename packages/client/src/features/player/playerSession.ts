@@ -4,9 +4,11 @@
  */
 import { useEffect } from 'react';
 import { PLAYER_COLORS } from '@durak/shared';
-import type { ErrorCode, PlayerColor } from '@durak/shared';
+import type { Card, CardId, ErrorCode, PlayerColor, PlayerView } from '@durak/shared';
 import { ACK_TIMEOUT_MS, createSocket } from '../../socket/socket';
 import { useRoomSync } from '../../socket/useRoomSync';
+import { useHandStore } from '../../store/handStore';
+import { useRoomStore } from '../../store/roomStore';
 import { tokenStorage, useSessionStore } from '../../store/sessionStore';
 
 export const playerSocket = createSocket(() => {
@@ -26,11 +28,27 @@ export function usePlayerSession(): void {
       setPlayerId(null);
     };
 
+    const onGameState = (view: PlayerView) => useHandStore.getState().setView(view);
+
     playerSocket.on('session:restored', onRestored);
     playerSocket.on('session:invalid', onInvalid);
+    playerSocket.on('game:state', onGameState);
+
+    // A new phase (lobby, new game, results) starts clean: this also lets a
+    // rematch, whose version restarts at 0, through the version check.
+    let phase = useRoomStore.getState().room?.phase;
+    const unsubscribe = useRoomStore.subscribe((state) => {
+      if (state.room && state.room.phase !== phase) {
+        phase = state.room.phase;
+        useHandStore.getState().clearView();
+      }
+    });
+
     return () => {
       playerSocket.off('session:restored', onRestored);
       playerSocket.off('session:invalid', onInvalid);
+      playerSocket.off('game:state', onGameState);
+      unsubscribe();
     };
   }, []);
 }
@@ -69,4 +87,45 @@ export async function leaveLobby(): Promise<CommandOutcome> {
 /** First palette color nobody has taken yet. */
 export function firstFreeColor(taken: readonly PlayerColor[]): PlayerColor | null {
   return PLAYER_COLORS.find((color) => !taken.includes(color)) ?? null;
+}
+
+type GameCommand =
+  | { readonly kind: 'attack'; readonly cardId: CardId }
+  | { readonly kind: 'defend'; readonly cardId: CardId; readonly targetAttackIndex: number }
+  | { readonly kind: 'pass' }
+  | { readonly kind: 'take' };
+
+async function emitGameCommand(command: GameCommand): Promise<CommandOutcome> {
+  const socket = playerSocket.timeout(ACK_TIMEOUT_MS);
+  try {
+    const ack = await (command.kind === 'attack'
+      ? socket.emitWithAck('game:attack', { cardId: command.cardId })
+      : command.kind === 'defend'
+        ? socket.emitWithAck('game:defend', {
+            cardId: command.cardId,
+            targetAttackIndex: command.targetAttackIndex,
+          })
+        : command.kind === 'pass'
+          ? socket.emitWithAck('game:pass', {})
+          : socket.emitWithAck('game:take', {}));
+    return ack.ok ? null : ack.error;
+  } catch {
+    return 'INTERNAL'; // ack timeout: server unreachable
+  }
+}
+
+/**
+ * Sends a move. A card move is applied optimistically (the card leaves the
+ * hand and sticks to its target); an error rolls it back with a toast. On
+ * success the snapshot has already arrived (the server emits it before the
+ * ack, on the same socket), so clearing the pending move is seamless.
+ */
+export async function playMove(command: GameCommand, card?: Card): Promise<void> {
+  const { setPending, showToast } = useHandStore.getState();
+  if (card) {
+    setPending({ card, targetIndex: command.kind === 'defend' ? command.targetAttackIndex : null });
+  }
+  const outcome = await emitGameCommand(command);
+  setPending(null);
+  if (outcome) showToast(outcome);
 }

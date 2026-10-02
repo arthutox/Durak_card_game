@@ -208,7 +208,7 @@ interface PlayerView extends PublicView {
 Stores:
 - `store/roomStore.ts` — connection status and the latest `RoomView` (both screens).
 - `store/sessionStore.ts` — this phone's `playerId`; the `sessionToken` lives in `localStorage` behind a guarded wrapper.
-- `store/gameStore.ts` — the latest `PublicView` for the board (older `version`s are ignored; cleared on every room phase change so a rematch can restart at version 0) and the board banner. *(planned for the phone: `PlayerView`, `pendingMove` for an optimistic drop, toasts)*
+- `store/gameStore.ts` — the latest `PublicView` for the board (older `version`s are ignored; cleared on every room phase change so a rematch can restart at version 0) and the board banner. `store/handStore.ts` holds the phone's `PlayerView`, the `pendingMove` for the optimistic drop and the error toast; `features/player/handLogic.ts` derives role, attackable cards, defend targets, Pass/Take availability.
 
 Derived data are **selectors, not fields** (DRY, single source of truth): `myRole` (`attacker` / `thrower` / `defender` / `idle` / `finished`), `canPass`, `canTake`, `validTargets(cardId)` — built on `shared/engine/rules`.
 
@@ -389,7 +389,7 @@ Every sprint ends with a working, verifiable result (definition of done).
 | 1 | **Game engine** (TDD) | `createGame`; `applyAction`: attack, defend a specific card, pass (`primary → open`) with pass reset, take, beaten; drawing, turn passing, players leaving, loser/draw | a test for every rule in §1 + a simulation of random legal games: always 36 cards, every game terminates | ✅ |
 | 2 | **Game protocol** (server) | `host:*` commands, `game:attack/defend/pass/take`, projections, `game:state` / `board:state` / `game:event` / `board:banner`, snapshot on reconnect | integration tests: views do not leak; the last-slot race is covered at engine level (first-come-first-served, `TABLE_LIMIT`); a full game played by three scripted clients | ✅ |
 | 3 | **Board UI** (`HostBoard`) | table pairs, stock + trump, discard pile, players around the table (card count, role, pass, offline), banner, results, host buttons | the whole game is visible on the laptop | ✅ |
-| 4 | **Hand UI + drag-and-drop** (`PlayerHand`) | card fan, dnd-kit (touch/pointer sensors), attack zone and defend targets, valid-target highlighting, optimistic drop + rollback, toasts, Pass / Take buttons | a full game on two phones | |
+| 4 | **Hand UI + drag-and-drop** (`PlayerHand`) | card fan, dnd-kit (touch/pointer sensors), attack zone and defend targets, valid-target highlighting, optimistic drop + rollback, toasts, Pass / Take buttons | a full game on two phones | ⏳ implemented, awaiting a real-phone playtest |
 | 5 | **Polish** | animations, reconnect UX, playtest on 3–6 phones, README with GIF/screenshots, quieter test logs; *optional:* priority/turn timer | ready for the portfolio | |
 
 ---

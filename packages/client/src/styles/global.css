@@ -470,3 +470,154 @@ h2 {
   color: #2a0a0a;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
 }
+
+/* ---------- game (phone) ---------- */
+.phone-game {
+  display: grid;
+  gap: 12px;
+}
+
+.opponents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.opponent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--panel);
+}
+
+.opponent.is-offline {
+  opacity: 0.5;
+}
+
+.trump-info .card {
+  width: 28px;
+  height: 38px;
+  box-shadow: none;
+}
+
+.trump-info .card-rank,
+.trump-info .card-suit {
+  font-size: 14px;
+}
+
+.phone-table {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: center;
+  gap: 14px;
+  min-height: 200px;
+  padding: 12px 12px 24px;
+  border: 2px dashed transparent;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.phone-table.is-valid,
+.pair.is-valid {
+  border-color: var(--ok);
+}
+
+.phone-table.is-over,
+.pair.is-over {
+  background: rgba(123, 237, 159, 0.18);
+}
+
+.pair {
+  border: 2px dashed transparent;
+  border-radius: 10px;
+}
+
+.pair.is-pending {
+  opacity: 0.7;
+}
+
+.phone-game .card {
+  width: 56px;
+  height: 82px;
+}
+
+.phone-game .card-rank {
+  font-size: 22px;
+}
+
+.phone-game .card-suit {
+  font-size: 24px;
+}
+
+.pair-defense {
+  left: 16px;
+  top: 18px;
+}
+
+.hint {
+  min-height: 1.4em;
+  margin: 0;
+  text-align: center;
+}
+
+.action-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.action-bar .button {
+  margin-top: 0;
+}
+
+.hand-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hand-card {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+.hand-card.is-dimmed {
+  opacity: 0.45;
+  touch-action: auto;
+  cursor: default;
+}
+
+.hand-card.is-dragging {
+  opacity: 0.25;
+}
+
+.hand-card.is-playable .card {
+  box-shadow:
+    0 0 0 2px var(--ok),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: 90vw;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  background: var(--danger);
+  color: #2a0a0a;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+.outcome {
+  text-align: center;
+}
