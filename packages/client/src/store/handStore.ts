@@ -18,6 +18,7 @@ interface HandState {
   view: PlayerView | null;
   pendingMove: PendingMove | null;
   toast: Toast | null;
+  /** Same rule as the board: strictly older snapshots are ignored, equal ones refresh presence and the clock. */
   setView: (view: PlayerView) => void;
   clearView: () => void;
   setPending: (move: PendingMove | null) => void;
@@ -31,7 +32,7 @@ export const useHandStore = create<HandState>()((set) => ({
   view: null,
   pendingMove: null,
   toast: null,
-  setView: (view) => set((s) => (s.view && s.view.version >= view.version ? s : { view })),
+  setView: (view) => set((s) => (s.view && s.view.version > view.version ? s : { view })),
   clearView: () => set({ view: null, pendingMove: null, toast: null }),
   setPending: (pendingMove) => set({ pendingMove }),
   showToast: (code) => set({ toast: { id: ++toastCounter, code } }),
