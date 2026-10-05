@@ -26,7 +26,7 @@ export const ERROR_MESSAGES = {
   NO_GAME: 'There is no game in progress',
   // host
   NOT_ENOUGH_PLAYERS: 'At least 2 players are needed to start',
-  PLAYERS_OFFLINE: 'Some players are offline',
+  PLAYERS_OFFLINE: 'Some players are offline: remove them with ✕ or wait for them to return',
   NOT_FINISHED: 'The game is not finished yet',
 } as const;
 

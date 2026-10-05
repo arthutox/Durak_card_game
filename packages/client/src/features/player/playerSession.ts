@@ -32,6 +32,7 @@ export function usePlayerSession(): void {
 
     playerSocket.on('session:restored', onRestored);
     playerSocket.on('session:invalid', onInvalid);
+    playerSocket.on('session:kicked', onInvalid);
     playerSocket.on('game:state', onGameState);
 
     // A new phase (lobby, new game, results) starts clean: this also lets a
@@ -47,6 +48,7 @@ export function usePlayerSession(): void {
     return () => {
       playerSocket.off('session:restored', onRestored);
       playerSocket.off('session:invalid', onInvalid);
+      playerSocket.off('session:kicked', onInvalid);
       playerSocket.off('game:state', onGameState);
       unsubscribe();
     };

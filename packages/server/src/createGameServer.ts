@@ -59,7 +59,7 @@ export function createGameServer(
 
   io.use(authenticate);
   io.on('connection', (socket) => {
-    if (socket.data.role === 'board') registerBoardHandlers(socket, { room, broadcast, flow });
+    if (socket.data.role === 'board') registerBoardHandlers(socket, { io, room, broadcast, flow });
     else registerPlayerHandlers(socket, { io, room, broadcast, flow });
   });
 
