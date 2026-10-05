@@ -12,6 +12,7 @@ A LAN multiplayer "Podkidnoy Durak" card game, built as a portfolio piece showin
 
 - **All project documentation is written in English**: `README.md`, everything in `docs/`, this file, code comments and JSDoc. This applies to new docs and to edits of existing ones.
 - The user interface is in English too: screen texts and the error messages in `shared/src/protocol/errors.ts`.
+- **Branching:** all development happens on `develop`. Every feature gets its own branch cut from `develop` (`feature/<name>`) and is merged back into `develop` with `--no-ff`. `main` only receives `develop` after the final tests; never commit to it directly.
 
 ## Commands
 
