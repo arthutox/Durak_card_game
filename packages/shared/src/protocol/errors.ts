@@ -7,6 +7,8 @@ export const ERROR_MESSAGES = {
   VALIDATION: 'Invalid request data',
   FORBIDDEN: 'You are not allowed to do this',
   INTERNAL: 'Something went wrong on the server',
+  NO_CONNECTION: 'No connection to the server, check your Wi-Fi',
+  RATE_LIMITED: 'Too many requests, slow down a little',
   // lobby
   NICKNAME_INVALID: 'Nickname must be 1 to 16 characters long',
   NICKNAME_TAKEN: 'This nickname is already taken',
@@ -26,7 +28,7 @@ export const ERROR_MESSAGES = {
   NO_GAME: 'There is no game in progress',
   // host
   NOT_ENOUGH_PLAYERS: 'At least 2 players are needed to start',
-  PLAYERS_OFFLINE: 'Some players are offline',
+  PLAYERS_OFFLINE: 'Some players are offline: remove them with ✕ or wait for them to return',
   NOT_FINISHED: 'The game is not finished yet',
 } as const;
 

@@ -121,3 +121,49 @@ describe('Room.toView', () => {
     expect(json).not.toContain('socket-secret');
   });
 });
+
+describe('Room.kick', () => {
+  function roomWithPlayers() {
+    const room = createRoom();
+    const a = room.join('s1', { nickname: 'A', color: 'red' });
+    const b = room.join('s2', { nickname: 'B', color: 'blue' });
+    if (!a.ok || !b.ok) throw new Error('join failed');
+    return { room, a: a.value, b: b.value };
+  }
+
+  it('removes the seat and hands it back, even when the phone is offline', () => {
+    const { room, a } = roomWithPlayers();
+    room.disconnect('s1');
+
+    const result = room.kick(a.playerId);
+
+    expect(result.ok && result.value.playerId).toBe(a.playerId);
+    expect(room.seats.map((seat) => seat.nickname)).toEqual(['B']);
+    // The old session token no longer works and the color is free again.
+    expect(room.resume(a.sessionToken, 's3')).toBeNull();
+    expect(room.join('s4', { nickname: 'C', color: 'red' }).ok).toBe(true);
+  });
+
+  it('rejects an unknown player', () => {
+    expect(roomWithPlayers().room.kick('nobody')).toEqual({ ok: false, error: 'NOT_JOINED' });
+  });
+
+  it('is a lobby-only action', () => {
+    const { room, a } = roomWithPlayers();
+    expect(room.startGame().ok).toBe(true);
+
+    expect(room.kick(a.playerId)).toEqual({ ok: false, error: 'GAME_IN_PROGRESS' });
+    expect(room.seats).toHaveLength(2);
+  });
+
+  it('lets the host start again once the dead seat is gone', () => {
+    const { room, a } = roomWithPlayers();
+    room.disconnect('s1');
+    expect(room.startGame()).toEqual({ ok: false, error: 'PLAYERS_OFFLINE' });
+
+    room.kick(a.playerId);
+    room.join('s5', { nickname: 'C', color: 'green' });
+
+    expect(room.startGame().ok).toBe(true);
+  });
+});

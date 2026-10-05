@@ -14,6 +14,7 @@ import type {
   DefendPayload,
   EmptyPayload,
   JoinPayload,
+  KickPayload,
   StartPayload,
 } from './schemas.js';
 import type { PlayerView, PublicView, RoomView } from './views.js';
@@ -39,6 +40,8 @@ export interface ClientToServerEvents {
   'game:take': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
   /** Board: start a game with everyone in the lobby, optionally with a turn timer. */
   'host:start': (payload: StartPayload, ack: AckFn<EmptyPayload>) => void;
+  /** Board: remove a seat from the lobby (e.g. a phone that died). */
+  'host:kick': (payload: KickPayload, ack: AckFn<EmptyPayload>) => void;
   /** Board: abandon the running game and return to the lobby. */
   'host:abort': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
   /** Board: new game with the same players. */
@@ -52,6 +55,8 @@ export interface ServerToClientEvents {
   'room:state': (view: RoomView) => void;
   /** The phone sent an unknown session token (e.g. the server restarted). */
   'session:invalid': () => void;
+  /** The host removed this phone's seat; it should go back to the join form. */
+  'session:kicked': () => void;
   /** Sent to this phone once its token has been accepted (join or reconnect). */
   'session:restored': (session: { playerId: PlayerId }) => void;
   /** Personal snapshot after every game change and on reconnect. */

@@ -13,7 +13,9 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:e2e": "pnpm --filter @durak/e2e test:e2e",
+    "format:check": "prettier --check packages"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

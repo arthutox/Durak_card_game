@@ -5,10 +5,12 @@ interface PlayerListProps {
   players: readonly LobbyPlayerView[];
   /** Highlights the viewer's own row on the phone. */
   meId?: PlayerId | null;
+  /** Board only: shows a remove button on every row. */
+  onKick?: (playerId: PlayerId) => void;
 }
 
 /** Seat order = clockwise order at the table, so the list is numbered. */
-export function PlayerList({ players, meId = null }: PlayerListProps) {
+export function PlayerList({ players, meId = null, onKick }: PlayerListProps) {
   if (players.length === 0) {
     return <p className="muted">Nobody yet. Scan the QR code to join.</p>;
   }
@@ -27,6 +29,15 @@ export function PlayerList({ players, meId = null }: PlayerListProps) {
           </span>
           {player.id === meId && <span className="badge">you</span>}
           {!player.online && <span className="badge badge-warn">offline</span>}
+          {onKick && (
+            <button
+              className="button button-small kick-button"
+              aria-label={`Remove ${player.nickname}`}
+              onClick={() => onKick(player.id)}
+            >
+              ✕
+            </button>
+          )}
         </li>
       ))}
     </ol>

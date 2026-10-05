@@ -10,11 +10,15 @@ import type { Scheduler } from './game/TurnTimer.js';
 import { Room } from './room/Room.js';
 import { authenticate } from './socket/auth.js';
 import { registerBoardHandlers } from './socket/boardHandlers.js';
+import { DEFAULT_COMMAND_LIMITS, limitCommands } from './socket/command.js';
 import { createBroadcaster } from './socket/broadcaster.js';
 import { createGameFlow } from './socket/gameFlow.js';
 import type { GameFlow } from './socket/gameFlow.js';
 import { registerPlayerHandlers } from './socket/playerHandlers.js';
 import type { GameServer } from './socket/types.js';
+
+/** Every real message is tiny (a card id, a nickname); anything bigger is not from the game. */
+const SOCKET_OPTIONS = { maxHttpBufferSize: 10_000 };
 
 export interface GameServerInstance {
   readonly httpServer: HttpServer;
@@ -50,7 +54,7 @@ export function createGameServer(
   // in production Express serves the page and everything is same-origin.
   const io: GameServer = new Server(
     httpServer,
-    config.isProduction ? {} : { cors: { origin: true } },
+    config.isProduction ? SOCKET_OPTIONS : { ...SOCKET_OPTIONS, cors: { origin: true } },
   );
 
   const room = new Room({ generateId: randomUUID, joinUrl, now: clock.now });
@@ -59,7 +63,8 @@ export function createGameServer(
 
   io.use(authenticate);
   io.on('connection', (socket) => {
-    if (socket.data.role === 'board') registerBoardHandlers(socket, { room, broadcast, flow });
+    limitCommands(socket, config.commandLimits ?? DEFAULT_COMMAND_LIMITS);
+    if (socket.data.role === 'board') registerBoardHandlers(socket, { io, room, broadcast, flow });
     else registerPlayerHandlers(socket, { io, room, broadcast, flow });
   });
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -8,27 +8,19 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { errorMessage } from '@durak/shared';
 import type { Card, PlayerView } from '@durak/shared';
 import { CardFace } from '../../components/CardFace';
 import { PLAYER_COLOR_HEX } from '../../components/playerColors';
 import { URGENT_SECONDS, useCountdown } from '../../components/useCountdown';
 import { useHandStore } from '../../store/handStore';
+import { ActionBar } from './ActionBar';
+import { ErrorToast } from './ErrorToast';
+import { GameOutcome } from './GameOutcome';
 import { HandCard } from './HandCard';
+import { useAutoPass } from './useAutoPass';
 import { ATTACK_ZONE_ID, TableZone, targetId } from './TableZone';
-import {
-  attackableCardIds,
-  canPass,
-  canTake,
-  defendTargets,
-  hint,
-  isOnClock,
-  needsAttention,
-  shouldAutoPass,
-} from './handLogic';
+import { attackableCardIds, defendTargets, hint, isOnClock } from './handLogic';
 import { playMove } from './playerSession';
-
-const TOAST_MS = 2500;
 
 /** The phone during a game: opponents, the table, your hand and the Pass / Take buttons. */
 export function PlayerGame({ view }: { view: PlayerView }) {
@@ -36,13 +28,7 @@ export function PlayerGame({ view }: { view: PlayerView }) {
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const seconds = useCountdown(view.turn);
 
-  // One automatic pass per snapshot; the next snapshot re-evaluates.
-  const autoPassedAt = useRef<number | null>(null);
-  useEffect(() => {
-    if (pending || autoPassedAt.current === view.version || !shouldAutoPass(view)) return;
-    autoPassedAt.current = view.version;
-    void playMove({ kind: 'pass' });
-  }, [view, pending]);
+  useAutoPass(view, pending);
 
   // Mouse for desktop testing; touch needs a short press so the page can still scroll.
   const sensors = useSensors(
@@ -143,61 +129,5 @@ export function PlayerGame({ view }: { view: PlayerView }) {
       </section>
       <DragOverlay>{activeCard && <CardFace card={activeCard} />}</DragOverlay>
     </DndContext>
-  );
-}
-
-function ActionBar({ view }: { view: PlayerView }) {
-  return (
-    <div className="action-bar">
-      <button
-        className={`button${needsAttention(view) ? ' is-attention' : ''}`}
-        disabled={!canPass(view)}
-        onClick={() => void playMove({ kind: 'pass' })}
-      >
-        Pass
-      </button>
-      <button
-        className="button button-primary"
-        disabled={!canTake(view)}
-        onClick={() => void playMove({ kind: 'take' })}
-      >
-        Take
-      </button>
-    </div>
-  );
-}
-
-function GameOutcome({ view }: { view: PlayerView }) {
-  const { outcome } = view;
-  if (!outcome) return null;
-  const text =
-    outcome.type === 'draw'
-      ? "It's a draw!"
-      : outcome.playerId === view.me.id
-        ? 'You are the Durak 🤡'
-        : `${view.players.find((p) => p.id === outcome.playerId)?.nickname ?? 'Someone'} is the Durak`;
-  return (
-    <div className="panel outcome" role="status">
-      <h2>{text}</h2>
-      <p className="muted">The host decides what happens next.</p>
-    </div>
-  );
-}
-
-/** A rejected move: the card has already snapped back, this says why. */
-function ErrorToast() {
-  const toast = useHandStore((s) => s.toast);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => useHandStore.getState().clearToast(), TOAST_MS);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
-  if (!toast) return null;
-  return (
-    <div className="toast" role="alert" key={toast.id}>
-      {errorMessage(toast.code)}
-    </div>
   );
 }

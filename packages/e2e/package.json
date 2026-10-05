@@ -1,0 +1,15 @@
+{
+  "name": "@durak/e2e",
+  "version": "0.9.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser smoke tests: the real board and phones against the built server.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.0.0"
+  }
+}

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **Status:** Sprint 0 done — monorepo skeleton, lobby (join/leave/reconnect, localhost-only board), rule primitives (`deck`, `rules`, `turnOrder`) with tests, HostBoard/PlayerHand lobby screens. Sprint 1 done: bout state machine, hand refill, `createGame`/`applyAction`, turn passing, end of game and a random-game simulation live in `shared/src/engine`. Sprint 2 done: `host:*` and `game:*` commands, projections, `game:state`/`board:state`/`game:event`/`board:banner`, snapshots on reconnect, a full-game integration test. Sprint 3 done: `HostBoard` shows the lobby, the game table (seats, stock + trump, discard, table pairs, status line), the `CANNOT_BEAT` banner, results and host buttons. Sprint 4 done: `PlayerGame` on the phone (dnd-kit drag-and-drop with tap shortcut, valid-target highlighting, optimistic drop with rollback, toasts, Pass/Take). First playtest done; fixes are ongoing (late game-over screen, Pass highlight, auto-pass). Sprint 5 in progress: CSS card animations (respect `prefers-reduced-motion`), a reconnect overlay on the phone, quiet test logs (`LOG_LEVEL`) and a successful 3-phone playtest are done; the optional turn timer is built (see the rules below); open: README GIF (a 4–6 phone run is a nice-to-have). The full design is in `docs/ARCHITECTURE.md` — read it before implementing anything.
+> **Status:** v0.9.0 is released (see `CHANGELOG.md`); history by sprint below. Sprint 0 done — monorepo skeleton, lobby (join/leave/reconnect, localhost-only board), rule primitives (`deck`, `rules`, `turnOrder`) with tests, HostBoard/PlayerHand lobby screens. Sprint 1 done: bout state machine, hand refill, `createGame`/`applyAction`, turn passing, end of game and a random-game simulation live in `shared/src/engine`. Sprint 2 done: `host:*` and `game:*` commands, projections, `game:state`/`board:state`/`game:event`/`board:banner`, snapshots on reconnect, a full-game integration test. Sprint 3 done: `HostBoard` shows the lobby, the game table (seats, stock + trump, discard, table pairs, status line), the `CANNOT_BEAT` banner, results and host buttons. Sprint 4 done: `PlayerGame` on the phone (dnd-kit drag-and-drop with tap shortcut, valid-target highlighting, optimistic drop with rollback, toasts, Pass/Take). First playtest done; fixes are ongoing (late game-over screen, Pass highlight, auto-pass). Sprint 5 in progress: CSS card animations (respect `prefers-reduced-motion`), a reconnect overlay on the phone, quiet test logs (`LOG_LEVEL`) and a successful 3-phone playtest are done; the optional turn timer is built (see the rules below); open: README GIF (a 4–6 phone run is a nice-to-have). The full design is in `docs/ARCHITECTURE.md` — read it before implementing anything.
 
 ## Project
 
@@ -12,6 +12,7 @@ A LAN multiplayer "Podkidnoy Durak" card game, built as a portfolio piece showin
 
 - **All project documentation is written in English**: `README.md`, everything in `docs/`, this file, code comments and JSDoc. This applies to new docs and to edits of existing ones.
 - The user interface is in English too: screen texts and the error messages in `shared/src/protocol/errors.ts`.
+- **Branching:** all development happens on `develop`. Every feature gets its own branch cut from `develop` (`feature/<name>`) and is merged back into `develop` with `--no-ff`. `main` only receives `develop` after the final tests; never commit to it directly.
 
 ## Commands
 
@@ -23,6 +24,8 @@ pnpm start                   # prod: Express serves client/dist
 pnpm test                    # vitest in all packages
 pnpm --filter @durak/shared test bout.test.ts -t "<test name>"   # single test (no `--`, or the filter is ignored)
 pnpm lint && pnpm typecheck
+pnpm format:check           # prettier --check packages (CI runs lint, format:check, typecheck, test, build)
+pnpm build && pnpm test:e2e     # browser smoke tests (Playwright) against the built server on :3100; locally `PW_CHANNEL=chrome` reuses installed Chrome, otherwise run `pnpm --filter @durak/e2e exec playwright install chromium` once
 pnpm format                  # prettier --write .
 ```
 

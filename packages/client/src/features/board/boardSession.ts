@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import type { ErrorCode, PublicView, TurnSeconds } from '@durak/shared';
-import { ACK_TIMEOUT_MS, createSocket } from '../../socket/socket';
+import type { PublicView, TurnSeconds } from '@durak/shared';
+import { ACK_TIMEOUT_MS, awaitOutcome, createSocket } from '../../socket/socket';
+import type { CommandOutcome } from '../../socket/socket';
 import { useRoomSync } from '../../socket/useRoomSync';
 import { useGameStore } from '../../store/gameStore';
 import { useRoomStore } from '../../store/roomStore';
@@ -36,23 +37,21 @@ export function useBoardSession(): void {
   }, []);
 }
 
-/** null = success; otherwise the error code to show. */
-export type CommandOutcome = ErrorCode | null;
-
 export type HostCommand = 'host:start' | 'host:abort' | 'host:rematch' | 'host:toLobby';
 
-export async function sendHostCommand(
+/** Removes a seat from the lobby (e.g. a phone that went away). */
+export function kickPlayer(playerId: string): Promise<CommandOutcome> {
+  return awaitOutcome(boardSocket.timeout(ACK_TIMEOUT_MS).emitWithAck('host:kick', { playerId }));
+}
+
+export function sendHostCommand(
   command: HostCommand,
   options: { turnSeconds?: TurnSeconds | null } = {},
 ): Promise<CommandOutcome> {
-  try {
-    const socket = boardSocket.timeout(ACK_TIMEOUT_MS);
-    const ack =
-      command === 'host:start'
-        ? await socket.emitWithAck(command, { turnSeconds: options.turnSeconds ?? null })
-        : await socket.emitWithAck(command, {});
-    return ack.ok ? null : ack.error;
-  } catch {
-    return 'INTERNAL'; // ack timeout: server unreachable
-  }
+  const socket = boardSocket.timeout(ACK_TIMEOUT_MS);
+  return awaitOutcome(
+    command === 'host:start'
+      ? socket.emitWithAck(command, { turnSeconds: options.turnSeconds ?? null })
+      : socket.emitWithAck(command, {}),
+  );
 }

@@ -24,6 +24,7 @@ import type {
   TurnClock,
   TurnSeconds,
 } from '@durak/shared';
+import { TurnDeadline } from './TurnDeadline.js';
 import { normalizeNickname, sameNickname } from './lobbyRules.js';
 
 /** A taken place at the table. Lives on the server only. */
@@ -62,13 +63,12 @@ export class Room {
   #phase: RoomPhase = 'lobby';
   readonly #seats: Seat[] = [];
   #game: GameState | null = null;
-  /** Turn timer length chosen at game start; kept for rematches, cleared in the lobby. */
-  #turnSeconds: TurnSeconds | null = null;
-  /** The current wait: every accepted action starts a new one with a fresh token. */
-  #turn: { readonly token: number; readonly deadlineAt: number } | null = null;
-  #turnCounter = 0;
+  /** The turn timer's length and current deadline; see `TurnDeadline`. */
+  readonly #deadline: TurnDeadline;
 
-  constructor(private readonly deps: RoomDeps) {}
+  constructor(private readonly deps: RoomDeps) {
+    this.#deadline = new TurnDeadline(deps.now ?? Date.now);
+  }
 
   get phase(): RoomPhase {
     return this.#phase;
@@ -94,7 +94,7 @@ export class Room {
   /** New game with the same players after a finished one. */
   rematch(): Result<GameState, ErrorCode> {
     if (this.#phase !== 'finished') return err('NOT_FINISHED');
-    return this.#beginGame(this.#turnSeconds);
+    return this.#beginGame(this.#deadline.seconds);
   }
 
   /** Drops the running game and returns to the lobby (seats are kept). */
@@ -118,7 +118,7 @@ export class Room {
 
     this.#game = result.value.state;
     if (this.#game.outcome !== null) this.#phase = 'finished';
-    this.#restartTurn();
+    this.#deadline.restart(this.#game.outcome === null);
     return result;
   }
 
@@ -131,7 +131,7 @@ export class Room {
     token: number,
   ): Result<{ events: GameEvent[]; moves: [PlayerId, Action][] }, ErrorCode> {
     if (!this.#game || this.#phase !== 'playing') return err('NO_GAME');
-    if (this.#turn?.token !== token) return err('ILLEGAL_ACTION');
+    if (!this.#deadline.isCurrent(token)) return err('ILLEGAL_ACTION');
 
     const events: GameEvent[] = [];
     const moves: [PlayerId, Action][] = [];
@@ -148,30 +148,18 @@ export class Room {
 
   /** When the current wait expires, for the timer service; null without a running turn timer. */
   get turnExpiry(): { readonly token: number; readonly inMs: number } | null {
-    if (!this.#turn) return null;
-    return { token: this.#turn.token, inMs: Math.max(0, this.#turn.deadlineAt - this.#now()) };
+    return this.#deadline.expiry;
   }
 
   /** Public projection of the turn clock; null when there is no timer. */
   turnView(): TurnClock | null {
-    if (!this.#turn || !this.#game || this.#turnSeconds === null) return null;
+    const { remainingMs, durationMs } = this.#deadline;
+    if (!this.#game || remainingMs === null || durationMs === null) return null;
     return {
-      remainingMs: Math.max(0, this.#turn.deadlineAt - this.#now()),
-      durationMs: this.#turnSeconds * 1000,
+      remainingMs,
+      durationMs,
       onClock: timeoutMoves(this.#game).map(([playerId]) => playerId),
     };
-  }
-
-  #now(): number {
-    return (this.deps.now ?? Date.now)();
-  }
-
-  #restartTurn(): void {
-    const running = this.#game !== null && this.#game.outcome === null;
-    this.#turn =
-      running && this.#turnSeconds !== null
-        ? { token: ++this.#turnCounter, deadlineAt: this.#now() + this.#turnSeconds * 1000 }
-        : null;
   }
 
   #beginGame(turnSeconds: TurnSeconds | null): Result<GameState, ErrorCode> {
@@ -183,15 +171,14 @@ export class Room {
       this.deps.rng ?? defaultRng,
     );
     this.#phase = 'playing';
-    this.#turnSeconds = turnSeconds;
-    this.#restartTurn();
+    this.#deadline.setSeconds(turnSeconds);
+    this.#deadline.restart(true);
     return ok(this.#game);
   }
 
   #toLobby(): void {
     this.#game = null;
-    this.#turnSeconds = null;
-    this.#turn = null;
+    this.#deadline.clear();
     this.#phase = 'lobby';
   }
 
@@ -224,6 +211,15 @@ export class Room {
     if (index === -1) return err('NOT_JOINED');
     this.#seats.splice(index, 1);
     return ok(undefined);
+  }
+
+  /** Host removes a seat (lobby only). Returns the seat so the caller can notify its socket. */
+  kick(playerId: PlayerId): Result<Seat, ErrorCode> {
+    if (this.#phase !== 'lobby') return err('GAME_IN_PROGRESS');
+    const index = this.#seats.findIndex((seat) => seat.playerId === playerId);
+    if (index === -1) return err('NOT_JOINED');
+    const [seat] = this.#seats.splice(index, 1);
+    return ok(seat!);
   }
 
   /** Re-attaches a phone to its seat by session token. Newest connection wins. */

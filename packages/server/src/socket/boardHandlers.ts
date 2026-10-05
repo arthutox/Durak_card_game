@@ -1,4 +1,10 @@
-import { ackError, ackOk, emptyPayloadSchema, startPayloadSchema } from '@durak/shared';
+import {
+  ackError,
+  ackOk,
+  emptyPayloadSchema,
+  kickPayloadSchema,
+  startPayloadSchema,
+} from '@durak/shared';
 import type { Ack, EmptyPayload, ErrorCode, Result } from '@durak/shared';
 import { logger } from '../logger.js';
 import type { Room } from '../room/Room.js';
@@ -6,9 +12,10 @@ import type { Broadcaster } from './broadcaster.js';
 import { onCommand } from './command.js';
 import type { GameFlow } from './gameFlow.js';
 import { CHANNELS } from './types.js';
-import type { GameSocket } from './types.js';
+import type { GameServer, GameSocket } from './types.js';
 
 interface Context {
+  readonly io: GameServer;
   readonly room: Room;
   readonly broadcast: Broadcaster;
   readonly flow: GameFlow;
@@ -20,7 +27,7 @@ interface Context {
  */
 export function registerBoardHandlers(
   socket: GameSocket,
-  { room, broadcast, flow }: Context,
+  { io, room, broadcast, flow }: Context,
 ): void {
   void socket.join(CHANNELS.board);
   socket.emit('room:state', room.toView());
@@ -38,6 +45,22 @@ export function registerBoardHandlers(
       return ackOk({});
     });
   };
+
+  onCommand(socket, 'host:kick', kickPayloadSchema, ({ playerId }): Ack<EmptyPayload> => {
+    const result = room.kick(playerId);
+    if (!result.ok) return ackError(result.error);
+
+    const { socketId } = result.value;
+    const phone = socketId ? io.sockets.sockets.get(socketId) : undefined;
+    if (phone) {
+      phone.data.playerId = null;
+      void phone.leave(CHANNELS.players);
+      phone.emit('session:kicked');
+    }
+    logger.info('host command', { event: 'host:kick', playerId });
+    broadcast.roomState();
+    return ackOk({});
+  });
 
   onCommand(socket, 'host:start', startPayloadSchema, ({ turnSeconds }): Ack<EmptyPayload> => {
     const result = room.startGame({ turnSeconds });
