@@ -78,7 +78,7 @@ function dispatch(
 }
 
 /** Who may put attack cards on the table right now (priority, not card rules). */
-function mayAttack(state: BoutState, playerId: PlayerId): boolean {
+export function mayAttack(state: BoutState, playerId: PlayerId): boolean {
   const { bout } = state;
   if (playerId === bout.defenderId || !state.order.includes(playerId)) return false;
   return bout.stage === 'open' || playerId === bout.attackerId;

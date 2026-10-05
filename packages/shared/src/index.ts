@@ -16,6 +16,7 @@ export * from './engine/deck.js';
 export * from './engine/draw.js';
 export * from './engine/game.js';
 export * from './engine/rules.js';
+export * from './engine/timeout.js';
 export * from './engine/turnOrder.js';
 
 // Protocol
