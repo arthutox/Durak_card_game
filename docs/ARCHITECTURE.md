@@ -219,7 +219,7 @@ Derived data are **selectors, not fields** (DRY, single source of truth): `myRol
 ### 3.1 Connection and roles
 
 - One namespace `/`. The role is passed in the handshake: `io({ auth: { role: 'player', sessionToken? } })` or `{ role: 'board' }`.
-- `role: 'board'` is accepted **only from loopback** (`127.0.0.1`, `::1`, `::ffff:127.0.0.1`); otherwise `connect_error` with `FORBIDDEN`.
+- `role: 'board'` is accepted **only from loopback** (`127.0.0.1`, `::1`, `::ffff:127.0.0.1`); otherwise `connect_error` with `FORBIDDEN`. A browser handshake must also carry a `localhost` / `127.0.0.1` / `[::1]` `Origin`, so a web page on another site cannot drive the board from the host's own browser; clients without an `Origin` header (not browsers) are accepted.
 - In development the client connects to the game server (:3000) directly rather than through a Vite proxy, so the server sees real client addresses.
 - A player with a valid `sessionToken` is reattached to their seat on connect (reconnect). Socket.IO repeats the handshake with the same `auth` callback on every reconnect. The newest connection wins: an older socket holding the same seat is disconnected.
 - Socket.IO rooms: `board`, `players`, `player:<playerId>` (snapshots go to each seat's socket directly).
@@ -242,7 +242,7 @@ Every command is acknowledged: `(res: Ack<T>) => void`, where `Ack<T> = { ok: tr
 | `host:rematch` | board | `{}` | `{}` | `NOT_FINISHED`, `PLAYERS_OFFLINE` |
 | `host:toLobby` | board | `{}` | `{}` | `NOT_FINISHED` |
 
-Any payload that fails its zod schema → `VALIDATION`. An unexpected exception in a handler is logged and answered with `INTERNAL`. Handlers are registered per role, so a socket only has the commands of its own role (the board has no player commands, phones have no `host:*` commands).
+Any payload that fails its zod schema → `VALIDATION`. An unexpected exception in a handler is logged and answered with `INTERNAL`. Every connection has a command budget (a burst of 20, then 10 per second, configurable through `ServerConfig.commandLimits`); beyond it commands get `RATE_LIMITED`. Messages over 10 kB are dropped by Socket.IO (`maxHttpBufferSize`). Handlers are registered per role, so a socket only has the commands of its own role (the board has no player commands, phones have no `host:*` commands).
 
 Why there is no `play_card` / `deal_cards` / `successful_defense` from the original brief:
 - `play_card` is split into `game:attack` and `game:defend`: they have different payloads and rules (ISP).

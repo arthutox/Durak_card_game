@@ -35,7 +35,14 @@ const sockets: ClientSocket[] = [];
 
 beforeEach(async () => {
   server = createGameServer(
-    { port: 0, publicPort: 0, isProduction: false, clientDistDir: '' },
+    {
+      port: 0,
+      publicPort: 0,
+      isProduction: false,
+      clientDistDir: '',
+      // The scripted phones try moves in bulk, far faster than a person.
+      commandLimits: { burst: 100_000, perSecond: 100_000 },
+    },
     'http://test/play',
   );
   await new Promise<void>((resolve) => server.httpServer.listen(0, '127.0.0.1', resolve));
