@@ -35,6 +35,15 @@ describe('gameStore', () => {
     expect(useGameStore.getState().game?.version).toBe(5);
   });
 
+  it('accepts a snapshot with the same version: presence changes without a move', () => {
+    const { setGame } = useGameStore.getState();
+    const player = { id: 'a', nickname: 'A', color: 'red' as const, cardCount: 6, finished: false };
+    setGame({ ...view(5), players: [{ ...player, online: true }] });
+    setGame({ ...view(5), players: [{ ...player, online: false }] });
+
+    expect(useGameStore.getState().game?.players[0]?.online).toBe(false);
+  });
+
   it('accepts a fresh game after the store was cleared (rematch restarts at version 0)', () => {
     const { setGame, clearGame } = useGameStore.getState();
     setGame(view(9));
