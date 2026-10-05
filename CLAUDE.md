@@ -24,6 +24,7 @@ pnpm start                   # prod: Express serves client/dist
 pnpm test                    # vitest in all packages
 pnpm --filter @durak/shared test bout.test.ts -t "<test name>"   # single test (no `--`, or the filter is ignored)
 pnpm lint && pnpm typecheck
+pnpm format:check           # prettier --check packages (CI runs lint, format:check, typecheck, test, build)
 pnpm format                  # prettier --write .
 ```
 
