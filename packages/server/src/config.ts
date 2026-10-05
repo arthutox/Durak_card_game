@@ -12,6 +12,8 @@ export interface ServerConfig {
   readonly isProduction: boolean;
   /** Built client (packages/client/dist), served by Express in production. */
   readonly clientDistDir: string;
+  /** Per-connection command limit; the default is generous for people and tiny for a script. */
+  readonly commandLimits?: { readonly burst: number; readonly perSecond: number };
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {

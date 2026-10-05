@@ -7,6 +7,7 @@ export const ERROR_MESSAGES = {
   VALIDATION: 'Invalid request data',
   FORBIDDEN: 'You are not allowed to do this',
   INTERNAL: 'Something went wrong on the server',
+  RATE_LIMITED: 'Too many requests, slow down a little',
   // lobby
   NICKNAME_INVALID: 'Nickname must be 1 to 16 characters long',
   NICKNAME_TAKEN: 'This nickname is already taken',
