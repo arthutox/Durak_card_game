@@ -66,6 +66,11 @@ export function shouldAutoPass(view: PlayerView): boolean {
   return canPass(view) && settled && attackableCardIds(view).size === 0;
 }
 
+/** True while the turn timer is running and the game is waiting for this player. */
+export function isOnClock(view: PlayerView): boolean {
+  return view.turn?.onClock.includes(view.me.id) ?? false;
+}
+
 /** The defender gave up: attackers should throw in more cards or pass. */
 export function needsAttention(view: PlayerView): boolean {
   return view.bout.defenderTaking && canPass(view);

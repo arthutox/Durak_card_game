@@ -30,6 +30,7 @@ const game = (
     limit: 6,
     ...overrides,
   },
+  turn: null,
   isFirstBout: false,
   outcome: null,
 });

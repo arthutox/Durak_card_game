@@ -12,6 +12,7 @@ import type { Room } from '../room/Room.js';
 import { handshakeSessionToken } from './auth.js';
 import type { Broadcaster } from './broadcaster.js';
 import { onCommand } from './command.js';
+import type { GameFlow } from './gameFlow.js';
 import { CHANNELS } from './types.js';
 import type { GameServer, GameSocket } from './types.js';
 
@@ -19,10 +20,14 @@ interface Context {
   readonly io: GameServer;
   readonly room: Room;
   readonly broadcast: Broadcaster;
+  readonly flow: GameFlow;
 }
 
 /** Wires one phone socket: session restore, lobby commands, disconnect. */
-export function registerPlayerHandlers(socket: GameSocket, { io, room, broadcast }: Context): void {
+export function registerPlayerHandlers(
+  socket: GameSocket,
+  { io, room, broadcast, flow }: Context,
+): void {
   restoreSession(socket, { io, room, broadcast });
   socket.emit('room:state', room.toView());
 
@@ -37,11 +42,7 @@ export function registerPlayerHandlers(socket: GameSocket, { io, room, broadcast
       return ackError(result.error);
     }
 
-    broadcast.gameEvents(result.value.events);
-    // Room state first: clients reset their game view on a phase change, so the
-    // snapshot (with the outcome) must arrive after the phase flips to 'finished'.
-    if (room.phase === 'finished') broadcast.roomState();
-    broadcast.gameState();
+    flow.moved(result.value.events);
     return ackOk({});
   };
 
@@ -97,7 +98,7 @@ export function registerPlayerHandlers(socket: GameSocket, { io, room, broadcast
  * its seat back. An older socket holding the same seat (second tab, half-dead
  * connection) is disconnected: newest connection wins.
  */
-function restoreSession(socket: GameSocket, { io, room, broadcast }: Context): void {
+function restoreSession(socket: GameSocket, { io, room, broadcast }: Omit<Context, 'flow'>): void {
   const token = handshakeSessionToken(socket);
   if (!token) return;
 

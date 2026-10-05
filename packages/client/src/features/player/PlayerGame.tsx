@@ -12,6 +12,7 @@ import { errorMessage } from '@durak/shared';
 import type { Card, PlayerView } from '@durak/shared';
 import { CardFace } from '../../components/CardFace';
 import { PLAYER_COLOR_HEX } from '../../components/playerColors';
+import { URGENT_SECONDS, useCountdown } from '../../components/useCountdown';
 import { useHandStore } from '../../store/handStore';
 import { HandCard } from './HandCard';
 import { ATTACK_ZONE_ID, TableZone, targetId } from './TableZone';
@@ -21,6 +22,7 @@ import {
   canTake,
   defendTargets,
   hint,
+  isOnClock,
   needsAttention,
   shouldAutoPass,
 } from './handLogic';
@@ -32,6 +34,7 @@ const TOAST_MS = 2500;
 export function PlayerGame({ view }: { view: PlayerView }) {
   const pending = useHandStore((s) => s.pendingMove);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
+  const seconds = useCountdown(view.turn);
 
   // One automatic pass per snapshot; the next snapshot re-evaluates.
   const autoPassedAt = useRef<number | null>(null);
@@ -113,6 +116,12 @@ export function PlayerGame({ view }: { view: PlayerView }) {
 
         <p className="hint" role="status">
           {hint(view)}
+          {seconds !== null && isOnClock(view) && (
+            <span className={`turn-clock${seconds <= URGENT_SECONDS ? ' is-urgent' : ''}`}>
+              {' '}
+              · {seconds} s
+            </span>
+          )}
         </p>
 
         <ActionBar view={view} />

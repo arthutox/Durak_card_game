@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { ErrorCode, PublicView } from '@durak/shared';
+import type { ErrorCode, PublicView, TurnSeconds } from '@durak/shared';
 import { ACK_TIMEOUT_MS, createSocket } from '../../socket/socket';
 import { useRoomSync } from '../../socket/useRoomSync';
 import { useGameStore } from '../../store/gameStore';
@@ -41,9 +41,16 @@ export type CommandOutcome = ErrorCode | null;
 
 export type HostCommand = 'host:start' | 'host:abort' | 'host:rematch' | 'host:toLobby';
 
-export async function sendHostCommand(command: HostCommand): Promise<CommandOutcome> {
+export async function sendHostCommand(
+  command: HostCommand,
+  options: { turnSeconds?: TurnSeconds | null } = {},
+): Promise<CommandOutcome> {
   try {
-    const ack = await boardSocket.timeout(ACK_TIMEOUT_MS).emitWithAck(command, {});
+    const socket = boardSocket.timeout(ACK_TIMEOUT_MS);
+    const ack =
+      command === 'host:start'
+        ? await socket.emitWithAck(command, { turnSeconds: options.turnSeconds ?? null })
+        : await socket.emitWithAck(command, {});
     return ack.ok ? null : ack.error;
   } catch {
     return 'INTERNAL'; // ack timeout: server unreachable

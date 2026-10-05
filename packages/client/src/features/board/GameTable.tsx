@@ -1,10 +1,13 @@
 import type { PublicView } from '@durak/shared';
 import { CardBack, CardFace } from '../../components/CardFace';
 import { PLAYER_COLOR_HEX } from '../../components/playerColors';
+import { URGENT_SECONDS, useCountdown } from '../../components/useCountdown';
+import { TurnClockBar } from './TurnClockBar';
 import { ROLE_LABEL, seatRole, statusLine } from './boardRoles';
 
 /** The running game as everyone at the table sees it. No hands: only counts. */
 export function GameTable({ game }: { game: PublicView }) {
+  const seconds = useCountdown(game.turn);
   return (
     <section className="game-table">
       <div className="seats">
@@ -23,6 +26,13 @@ export function GameTable({ game }: { game: PublicView }) {
               <span className="seat-cards">{player.finished ? '—' : `${player.cardCount} 🂠`}</span>
               {ROLE_LABEL[role] && <span className="badge">{ROLE_LABEL[role]}</span>}
               {passed && <span className="badge">passed</span>}
+              {seconds !== null && game.turn?.onClock.includes(player.id) && (
+                <span
+                  className={`badge badge-clock${seconds <= URGENT_SECONDS ? ' is-urgent' : ''}`}
+                >
+                  {seconds} s
+                </span>
+              )}
               {!player.online && <span className="badge badge-warn">offline</span>}
             </div>
           );
@@ -68,6 +78,8 @@ export function GameTable({ game }: { game: PublicView }) {
           )}
         </div>
       </div>
+
+      <TurnClockBar game={game} seconds={seconds} />
 
       <p className="status-line" role="status">
         {statusLine(game)}

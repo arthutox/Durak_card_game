@@ -6,11 +6,13 @@ import {
   defaultRng,
   err,
   ok,
+  timeoutMoves,
 } from '@durak/shared';
 import type {
   Action,
   ActionResult,
   ErrorCode,
+  GameEvent,
   GameState,
   Rng,
   JoinPayload,
@@ -19,6 +21,8 @@ import type {
   Result,
   RoomPhase,
   RoomView,
+  TurnClock,
+  TurnSeconds,
 } from '@durak/shared';
 import { normalizeNickname, sameNickname } from './lobbyRules.js';
 
@@ -39,6 +43,8 @@ export interface RoomDeps {
   readonly joinUrl: string;
   /** Randomness for shuffling and the first attacker (injected for deterministic tests). */
   readonly rng?: Rng;
+  /** Clock for the turn timer (injected so tests can drive time by hand). */
+  readonly now?: () => number;
 }
 
 export interface ResumeResult {
@@ -56,6 +62,11 @@ export class Room {
   #phase: RoomPhase = 'lobby';
   readonly #seats: Seat[] = [];
   #game: GameState | null = null;
+  /** Turn timer length chosen at game start; kept for rematches, cleared in the lobby. */
+  #turnSeconds: TurnSeconds | null = null;
+  /** The current wait: every accepted action starts a new one with a fresh token. */
+  #turn: { readonly token: number; readonly deadlineAt: number } | null = null;
+  #turnCounter = 0;
 
   constructor(private readonly deps: RoomDeps) {}
 
@@ -73,15 +84,17 @@ export class Room {
   }
 
   /** Starts a game with everyone seated. Host command. */
-  startGame(): Result<GameState, ErrorCode> {
+  startGame(
+    options: { turnSeconds?: TurnSeconds | null | undefined } = {},
+  ): Result<GameState, ErrorCode> {
     if (this.#phase !== 'lobby') return err('GAME_IN_PROGRESS');
-    return this.#beginGame();
+    return this.#beginGame(options.turnSeconds ?? null);
   }
 
   /** New game with the same players after a finished one. */
   rematch(): Result<GameState, ErrorCode> {
     if (this.#phase !== 'finished') return err('NOT_FINISHED');
-    return this.#beginGame();
+    return this.#beginGame(this.#turnSeconds);
   }
 
   /** Drops the running game and returns to the lobby (seats are kept). */
@@ -105,10 +118,63 @@ export class Room {
 
     this.#game = result.value.state;
     if (this.#game.outcome !== null) this.#phase = 'finished';
+    this.#restartTurn();
     return result;
   }
 
-  #beginGame(): Result<GameState, ErrorCode> {
+  /**
+   * The turn clock ran out: plays the default moves for whoever is holding the
+   * game up. `token` must belong to the wait that is still current, so a timer
+   * that fires late (after a move) is ignored.
+   */
+  actTimeout(
+    token: number,
+  ): Result<{ events: GameEvent[]; moves: [PlayerId, Action][] }, ErrorCode> {
+    if (!this.#game || this.#phase !== 'playing') return err('NO_GAME');
+    if (this.#turn?.token !== token) return err('ILLEGAL_ACTION');
+
+    const events: GameEvent[] = [];
+    const moves: [PlayerId, Action][] = [];
+    for (const [playerId, action] of timeoutMoves(this.#game)) {
+      // A bout that ended halfway (table cleared) means the rest of the list is stale.
+      if (moves.length > 0 && this.#game.table.length === 0) break;
+      const result = this.act(playerId, action);
+      if (!result.ok) break;
+      events.push(...result.value.events);
+      moves.push([playerId, action]);
+    }
+    return moves.length > 0 ? ok({ events, moves }) : err('ILLEGAL_ACTION');
+  }
+
+  /** When the current wait expires, for the timer service; null without a running turn timer. */
+  get turnExpiry(): { readonly token: number; readonly inMs: number } | null {
+    if (!this.#turn) return null;
+    return { token: this.#turn.token, inMs: Math.max(0, this.#turn.deadlineAt - this.#now()) };
+  }
+
+  /** Public projection of the turn clock; null when there is no timer. */
+  turnView(): TurnClock | null {
+    if (!this.#turn || !this.#game || this.#turnSeconds === null) return null;
+    return {
+      remainingMs: Math.max(0, this.#turn.deadlineAt - this.#now()),
+      durationMs: this.#turnSeconds * 1000,
+      onClock: timeoutMoves(this.#game).map(([playerId]) => playerId),
+    };
+  }
+
+  #now(): number {
+    return (this.deps.now ?? Date.now)();
+  }
+
+  #restartTurn(): void {
+    const running = this.#game !== null && this.#game.outcome === null;
+    this.#turn =
+      running && this.#turnSeconds !== null
+        ? { token: ++this.#turnCounter, deadlineAt: this.#now() + this.#turnSeconds * 1000 }
+        : null;
+  }
+
+  #beginGame(turnSeconds: TurnSeconds | null): Result<GameState, ErrorCode> {
     if (this.#seats.length < MIN_PLAYERS) return err('NOT_ENOUGH_PLAYERS');
     if (this.#seats.some((seat) => seat.socketId === null)) return err('PLAYERS_OFFLINE');
 
@@ -117,11 +183,15 @@ export class Room {
       this.deps.rng ?? defaultRng,
     );
     this.#phase = 'playing';
+    this.#turnSeconds = turnSeconds;
+    this.#restartTurn();
     return ok(this.#game);
   }
 
   #toLobby(): void {
     this.#game = null;
+    this.#turnSeconds = null;
+    this.#turn = null;
     this.#phase = 'lobby';
   }
 

@@ -9,7 +9,13 @@
 import type { GameEvent } from '../domain/game.js';
 import type { PlayerId } from '../domain/player.js';
 import type { AckFn } from './ack.js';
-import type { AttackPayload, DefendPayload, EmptyPayload, JoinPayload } from './schemas.js';
+import type {
+  AttackPayload,
+  DefendPayload,
+  EmptyPayload,
+  JoinPayload,
+  StartPayload,
+} from './schemas.js';
 import type { PlayerView, PublicView, RoomView } from './views.js';
 
 export interface JoinResult {
@@ -31,8 +37,8 @@ export interface ClientToServerEvents {
   'game:pass': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
   /** Player (defender): give up and take the table. */
   'game:take': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
-  /** Board: start a game with everyone in the lobby. */
-  'host:start': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
+  /** Board: start a game with everyone in the lobby, optionally with a turn timer. */
+  'host:start': (payload: StartPayload, ack: AckFn<EmptyPayload>) => void;
   /** Board: abandon the running game and return to the lobby. */
   'host:abort': (payload: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
   /** Board: new game with the same players. */
