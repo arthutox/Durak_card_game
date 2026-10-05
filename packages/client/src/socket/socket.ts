@@ -1,11 +1,39 @@
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
-import type { ClientToServerEvents, HandshakeAuth, ServerToClientEvents } from '@durak/shared';
+import { ackError } from '@durak/shared';
+import type {
+  Ack,
+  ClientToServerEvents,
+  ErrorCode,
+  HandshakeAuth,
+  ServerToClientEvents,
+} from '@durak/shared';
 
 export type ClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 /** How long a command waits for its ack before failing. */
 export const ACK_TIMEOUT_MS = 5000;
+
+/** null = success; otherwise the error code to show. */
+export type CommandOutcome = ErrorCode | null;
+
+/**
+ * Awaits a command's ack. A missing one (timeout, dropped connection) is
+ * reported as `NO_CONNECTION`, so it is not mistaken for a server-side error.
+ */
+export async function awaitAck<T>(pending: Promise<Ack<T>>): Promise<Ack<T>> {
+  try {
+    return await pending;
+  } catch {
+    return ackError('NO_CONNECTION');
+  }
+}
+
+/** Like `awaitAck`, for commands whose reply carries nothing but success or an error. */
+export async function awaitOutcome(pending: Promise<Ack<unknown>>): Promise<CommandOutcome> {
+  const ack = await awaitAck(pending);
+  return ack.ok ? null : ack.error;
+}
 
 /**
  * In development the page is served by Vite (:5173) and the game server runs
