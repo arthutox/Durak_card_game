@@ -35,13 +35,13 @@ Items marked *(planned)* do not exist in the code yet.
 - **Next bout:** after "Beaten" the former defender attacks; after "Take" the player after the defender attacks. Players who are out are skipped.
 - **Out of the game:** stock empty and hand empty → the player is out. The last player holding cards is the durak (loser). If the last two (or all) run out at the same moment, the game is a draw.
 - **Rematch** keeps the lobby; the first attacker is again the holder of the lowest trump.
-- Priority/turn timer — optional, last sprint.
+- Turn timer — optional, picked by the host in the lobby (Off / 30 / 60 / 90 s). When the clock of the current wait runs out the server plays a default move (`timeoutMoves`): defender takes, attackers pass, a main attacker with an empty table attacks with the lowest card.
 
 **Defaults (not discussed explicitly, easy to change):**
 - 6 players × 6 cards = the whole deck. In that case the last dealt card is revealed as trump and stays in its owner's hand.
 - Nobody holds a trump → a random player attacks first.
 - An attacker with an empty hand (stock exhausted) is treated as having passed.
-- An attacker who holds cards but has nothing to throw in must still press "Pass": the engine never skips them on its own, so the UI must keep Pass visible (and the optional timer, if built, covers the stalled case).
+- An attacker who holds cards but has nothing to throw in must still press "Pass": the engine never skips them on its own, so the UI must keep Pass visible (and the optional turn timer covers the stalled case).
 - The discard pile is face down: only its size is public.
 - In the lobby a disconnected player keeps the seat via the token; "Start" is unavailable while anyone is offline; "Leave" frees the seat.
 
@@ -390,7 +390,7 @@ Every sprint ends with a working, verifiable result (definition of done).
 | 2 | **Game protocol** (server) | `host:*` commands, `game:attack/defend/pass/take`, projections, `game:state` / `board:state` / `game:event` / `board:banner`, snapshot on reconnect | integration tests: views do not leak; the last-slot race is covered at engine level (first-come-first-served, `TABLE_LIMIT`); a full game played by three scripted clients | ✅ |
 | 3 | **Board UI** (`HostBoard`) | table pairs, stock + trump, discard pile, players around the table (card count, role, pass, offline), banner, results, host buttons | the whole game is visible on the laptop | ✅ |
 | 4 | **Hand UI + drag-and-drop** (`PlayerHand`) | card fan, dnd-kit (touch/pointer sensors), attack zone and defend targets, valid-target highlighting, optimistic drop + rollback, toasts, Pass / Take buttons | a full game on two phones | ⏳ implemented, awaiting a real-phone playtest |
-| 5 | **Finishing touches** | animations, reconnect UX, playtest on 3–6 phones (3 phones done), README with GIF/screenshots, quieter test logs; *optional:* priority/turn timer | ready for the portfolio | |
+| 5 | **Finishing touches** | animations, reconnect UX, playtest on 3–6 phones (3 phones done), README with GIF/screenshots, quieter test logs; *optional:* turn timer (done) | ready for the portfolio | |
 
 ---
 

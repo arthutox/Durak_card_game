@@ -3,7 +3,7 @@
 A digital version of the Russian card game **Podkidnoy Durak** for a group of friends on the same Wi-Fi network.
 The laptop is the **shared table** (server + big screen with the stock, the trump and the cards in play); smartphones are the **players' hands**: everyone joins from the phone's browser by scanning a QR code and plays their own cards.
 
-> **Status:** the game is playable end to end: lobby, a full game on the board and on phones, results and rematch. A 3-phone playtest went well. Remaining work is the finishing touches (a README GIF, an optional turn timer) — see the [roadmap](#roadmap).
+> **Status:** the game is playable end to end: lobby, a full game on the board and on phones, results and rematch. A 3-phone playtest went well. The optional turn timer is built (pick Off / 30 / 60 / 90 s in the lobby). Remaining work: a README GIF — see the [roadmap](#roadmap).
 
 - Up to 6 players, 36-card deck, podkidnoy (throw-in) variant
 - Drag a card onto the table to attack or onto an attack card to beat it; tap a card as a shortcut
@@ -179,7 +179,7 @@ Board: **http://localhost:3000/board**; phones join via the QR code (`http://<la
 | 2 | Game protocol: move commands, per-player snapshots, projections | ✅ |
 | 3 | Board screen: cards on the table, stock, trump, discard pile, players, results | ✅ |
 | 4 | Hand screen: card drag-and-drop, playable-card highlighting, Pass and Take buttons | ✅ first playtest done, fixes ongoing |
-| 5 | Finishing touches: card animations and reconnect overlay ✅, 3-phone playtest ✅; still open: GIF in the README, optional turn timer (a 4–6 phone run is a nice-to-have) | ⏳ |
+| 5 | Finishing touches: card animations and reconnect overlay ✅, 3-phone playtest ✅; optional turn timer ✅; still open: GIF in the README (a 4–6 phone run is a nice-to-have) | ⏳ |
 
 ## Rules in short
 
