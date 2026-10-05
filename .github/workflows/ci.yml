@@ -37,3 +37,14 @@ jobs:
       - run: pnpm test
       # Also proves that `shared` builds before `server` and `client` consume its dist.
       - run: pnpm build
+
+      # Browser smoke tests against the built server (the build step above comes first).
+      - run: pnpm --filter @durak/e2e exec playwright install --with-deps chromium
+      - run: pnpm --filter @durak/e2e test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: packages/e2e/test-results/
+          if-no-files-found: ignore
