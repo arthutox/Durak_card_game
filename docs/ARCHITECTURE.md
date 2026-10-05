@@ -390,7 +390,7 @@ Every sprint ends with a working, verifiable result (definition of done).
 | 2 | **Game protocol** (server) | `host:*` commands, `game:attack/defend/pass/take`, projections, `game:state` / `board:state` / `game:event` / `board:banner`, snapshot on reconnect | integration tests: views do not leak; the last-slot race is covered at engine level (first-come-first-served, `TABLE_LIMIT`); a full game played by three scripted clients | ✅ |
 | 3 | **Board UI** (`HostBoard`) | table pairs, stock + trump, discard pile, players around the table (card count, role, pass, offline), banner, results, host buttons | the whole game is visible on the laptop | ✅ |
 | 4 | **Hand UI + drag-and-drop** (`PlayerHand`) | card fan, dnd-kit (touch/pointer sensors), attack zone and defend targets, valid-target highlighting, optimistic drop + rollback, toasts, Pass / Take buttons | a full game on two phones | ⏳ implemented, awaiting a real-phone playtest |
-| 5 | **Finishing touches** | animations, reconnect UX, playtest on 3–6 phones, README with GIF/screenshots, quieter test logs; *optional:* priority/turn timer | ready for the portfolio | |
+| 5 | **Finishing touches** | animations, reconnect UX, playtest on 3–6 phones (3 phones done), README with GIF/screenshots, quieter test logs; *optional:* priority/turn timer | ready for the portfolio | |
 
 ---
 
