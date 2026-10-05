@@ -4,8 +4,9 @@
  */
 import { useEffect } from 'react';
 import { PLAYER_COLORS } from '@durak/shared';
-import type { Card, CardId, ErrorCode, PlayerColor, PlayerView } from '@durak/shared';
-import { ACK_TIMEOUT_MS, createSocket } from '../../socket/socket';
+import type { Card, CardId, JoinResult, PlayerColor, PlayerView } from '@durak/shared';
+import { ACK_TIMEOUT_MS, awaitAck, awaitOutcome, createSocket } from '../../socket/socket';
+import type { CommandOutcome } from '../../socket/socket';
 import { useRoomSync } from '../../socket/useRoomSync';
 import { useHandStore } from '../../store/handStore';
 import { useRoomStore } from '../../store/roomStore';
@@ -55,35 +56,24 @@ export function usePlayerSession(): void {
   }, []);
 }
 
-/** null = success; otherwise the error code to show. */
-export type CommandOutcome = ErrorCode | null;
-
 export async function joinLobby(nickname: string, color: PlayerColor): Promise<CommandOutcome> {
-  try {
-    const ack = await playerSocket
-      .timeout(ACK_TIMEOUT_MS)
-      .emitWithAck('lobby:join', { nickname, color });
-    if (!ack.ok) return ack.error;
+  const ack = await awaitAck<JoinResult>(
+    playerSocket.timeout(ACK_TIMEOUT_MS).emitWithAck('lobby:join', { nickname, color }),
+  );
+  if (!ack.ok) return ack.error;
 
-    tokenStorage.write(ack.data.sessionToken);
-    useSessionStore.getState().setPlayerId(ack.data.playerId);
-    return null;
-  } catch {
-    return 'INTERNAL'; // ack timeout: server unreachable
-  }
+  tokenStorage.write(ack.data.sessionToken);
+  useSessionStore.getState().setPlayerId(ack.data.playerId);
+  return null;
 }
 
 export async function leaveLobby(): Promise<CommandOutcome> {
-  try {
-    const ack = await playerSocket.timeout(ACK_TIMEOUT_MS).emitWithAck('lobby:leave', {});
-    if (!ack.ok) return ack.error;
+  const ack = await awaitAck(playerSocket.timeout(ACK_TIMEOUT_MS).emitWithAck('lobby:leave', {}));
+  if (!ack.ok) return ack.error;
 
-    tokenStorage.clear();
-    useSessionStore.getState().setPlayerId(null);
-    return null;
-  } catch {
-    return 'INTERNAL';
-  }
+  tokenStorage.clear();
+  useSessionStore.getState().setPlayerId(null);
+  return null;
 }
 
 /** First palette color nobody has taken yet. */
@@ -97,22 +87,22 @@ type GameCommand =
   | { readonly kind: 'pass' }
   | { readonly kind: 'take' };
 
-async function emitGameCommand(command: GameCommand): Promise<CommandOutcome> {
+function emitGameCommand(command: GameCommand): Promise<CommandOutcome> {
   const socket = playerSocket.timeout(ACK_TIMEOUT_MS);
-  try {
-    const ack = await (command.kind === 'attack'
-      ? socket.emitWithAck('game:attack', { cardId: command.cardId })
-      : command.kind === 'defend'
-        ? socket.emitWithAck('game:defend', {
-            cardId: command.cardId,
-            targetAttackIndex: command.targetAttackIndex,
-          })
-        : command.kind === 'pass'
-          ? socket.emitWithAck('game:pass', {})
-          : socket.emitWithAck('game:take', {}));
-    return ack.ok ? null : ack.error;
-  } catch {
-    return 'INTERNAL'; // ack timeout: server unreachable
+  switch (command.kind) {
+    case 'attack':
+      return awaitOutcome(socket.emitWithAck('game:attack', { cardId: command.cardId }));
+    case 'defend':
+      return awaitOutcome(
+        socket.emitWithAck('game:defend', {
+          cardId: command.cardId,
+          targetAttackIndex: command.targetAttackIndex,
+        }),
+      );
+    case 'pass':
+      return awaitOutcome(socket.emitWithAck('game:pass', {}));
+    case 'take':
+      return awaitOutcome(socket.emitWithAck('game:take', {}));
   }
 }
 

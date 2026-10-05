@@ -242,7 +242,7 @@ Every command is acknowledged: `(res: Ack<T>) => void`, where `Ack<T> = { ok: tr
 | `host:rematch` | board | `{}` | `{}` | `NOT_FINISHED`, `PLAYERS_OFFLINE` |
 | `host:toLobby` | board | `{}` | `{}` | `NOT_FINISHED` |
 
-Any payload that fails its zod schema → `VALIDATION`. An unexpected exception in a handler is logged and answered with `INTERNAL`. Every connection has a command budget (a burst of 20, then 10 per second, configurable through `ServerConfig.commandLimits`); beyond it commands get `RATE_LIMITED`. Messages over 10 kB are dropped by Socket.IO (`maxHttpBufferSize`). Handlers are registered per role, so a socket only has the commands of its own role (the board has no player commands, phones have no `host:*` commands).
+Any payload that fails its zod schema → `VALIDATION`. An unexpected exception in a handler is logged and answered with `INTERNAL`. On the client, a command whose ack never arrives (timeout, dropped connection) is shown as `NO_CONNECTION`; the server never sends that code. Every connection has a command budget (a burst of 20, then 10 per second, configurable through `ServerConfig.commandLimits`); beyond it commands get `RATE_LIMITED`. Messages over 10 kB are dropped by Socket.IO (`maxHttpBufferSize`). Handlers are registered per role, so a socket only has the commands of its own role (the board has no player commands, phones have no `host:*` commands).
 
 Why there is no `play_card` / `deal_cards` / `successful_defense` from the original brief:
 - `play_card` is split into `game:attack` and `game:defend`: they have different payloads and rules (ISP).
