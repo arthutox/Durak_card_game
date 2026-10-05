@@ -71,9 +71,12 @@ The laptop is the **shared table** (server + big screen with the stock, the trum
 
 - The phone sends only **intents** ("I want to play this card"); only the server changes the state.
 - After every change the server broadcasts **snapshots**: each player gets their own (with their cards), the board gets a public one.
-- The board screen is accepted **only from the laptop itself** (localhost), so a player cannot open it from a phone and control the game.
+- The board screen is accepted **only from the laptop itself** (localhost, and only from a page served from localhost), so a player cannot open it from a phone, and a web page on another site cannot control the game from the host's browser.
+- Every connection has a command budget and a message size cap, so one misbehaving client cannot flood the server.
 - Hands of other players, the stock order and the discard pile never leave the server: all views are built in one place (`server/src/game/projections.ts`) and covered by leak tests.
 - A move is applied optimistically on the phone and rolled back with a toast if the server rejects it.
+
+**Good to know:** the game runs over plain HTTP on your local network, which is fine for a living-room game. A phone's session token travels in the clear on the Wi-Fi, so anyone on the same network who can sniff traffic could take over that seat. Play on a network you trust.
 
 Details — state model, Socket.IO event table, rules — are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -166,7 +169,8 @@ Board: **http://localhost:3000/board**; phones join via the QR code (`http://<la
 - **Lobby** (`packages/server/src/room/Room.test.ts`) — unique nickname and color, 6-player limit, the seat is kept on disconnect, no secret tokens in the data sent to clients.
 - **Projections** (`packages/server/src/game/projections.test.ts`) — a player's view contains no other hand, stock card or session token.
 - **Integration** (`packages/server/test/`) — a real server on a random port and real Socket.IO clients: joining, validation errors, reconnect by token, host commands, rejected moves, the board banner, and a whole game played by three scripted phones with rematch.
-- **Client** (`packages/client/src/**/*.test.ts`) — what the phone may do (playable cards, drop targets, Pass/Take, auto-pass), board roles and status line, the snapshot store.
+- **Client** (`packages/client/src/**/*.test.ts`) — what the phone may do (playable cards, drop targets, Pass/Take, auto-pass), board roles and status line, the snapshot stores, seat layout around the table.
+- **Browser smoke tests** (`packages/e2e`, Playwright) — the built server with a real board and two phone-sized browsers: taking seats, removing a seat, and a game with the turn timer. Run with `pnpm build && pnpm test:e2e`.
 
 ---
 
