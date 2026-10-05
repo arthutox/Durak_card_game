@@ -25,7 +25,10 @@ export function createBroadcaster(io: GameServer, room: Room): Broadcaster {
     if (socket.data.role === 'board') {
       socket.emit('board:state', toPublicView(game, room.seats, room.turnView()));
     } else if (socket.data.playerId) {
-      socket.emit('game:state', toPlayerView(game, room.seats, socket.data.playerId, room.turnView()));
+      socket.emit(
+        'game:state',
+        toPlayerView(game, room.seats, socket.data.playerId, room.turnView()),
+      );
     }
   };
 

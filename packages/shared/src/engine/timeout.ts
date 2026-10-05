@@ -32,9 +32,7 @@ export function timeoutMoves(state: GameState): [PlayerId, Action][] {
   return state.order
     .filter(
       (id) =>
-        mayAttack(state, id) &&
-        !bout.passed.includes(id) &&
-        (state.hands[id] ?? []).length > 0,
+        mayAttack(state, id) && !bout.passed.includes(id) && (state.hands[id] ?? []).length > 0,
     )
     .map((id): [PlayerId, Action] => [id, { type: 'pass' }]);
 }

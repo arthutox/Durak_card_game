@@ -84,7 +84,9 @@ export class Room {
   }
 
   /** Starts a game with everyone seated. Host command. */
-  startGame(options: { turnSeconds?: TurnSeconds | null | undefined } = {}): Result<GameState, ErrorCode> {
+  startGame(
+    options: { turnSeconds?: TurnSeconds | null | undefined } = {},
+  ): Result<GameState, ErrorCode> {
     if (this.#phase !== 'lobby') return err('GAME_IN_PROGRESS');
     return this.#beginGame(options.turnSeconds ?? null);
   }
@@ -125,7 +127,9 @@ export class Room {
    * game up. `token` must belong to the wait that is still current, so a timer
    * that fires late (after a move) is ignored.
    */
-  actTimeout(token: number): Result<{ events: GameEvent[]; moves: [PlayerId, Action][] }, ErrorCode> {
+  actTimeout(
+    token: number,
+  ): Result<{ events: GameEvent[]; moves: [PlayerId, Action][] }, ErrorCode> {
     if (!this.#game || this.#phase !== 'playing') return err('NO_GAME');
     if (this.#turn?.token !== token) return err('ILLEGAL_ACTION');
 

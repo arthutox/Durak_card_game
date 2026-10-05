@@ -7,6 +7,7 @@ import {
   canTake,
   defendTargets,
   hint,
+  isOnClock,
   myRole,
   needsAttention,
   shouldAutoPass,
@@ -43,6 +44,7 @@ function view(
       ...overrides.bout,
     },
     isFirstBout: false,
+    turn: null,
     outcome: null,
     me: { id: meId, hand: overrides.hand ?? [c('S', 7), c('D', 7), c('C', 9)] },
   };
@@ -141,5 +143,22 @@ describe('defender takes the cards', () => {
     const covered = [{ attack: c('S', 7), defense: c('S', 9) }];
     expect(shouldAutoPass(view('a', { hand: [c('C', 12)], table: covered }))).toBe(true);
     expect(shouldAutoPass(view('a', { hand: [c('D', 9)], table: covered }))).toBe(false);
+  });
+});
+
+describe('isOnClock', () => {
+  const clock = (onClock: string[]): PlayerView['turn'] => ({
+    remainingMs: 10_000,
+    durationMs: 30_000,
+    onClock,
+  });
+
+  it('is true only for the players the timer is waiting for', () => {
+    expect(isOnClock({ ...view('a'), turn: clock(['a']) })).toBe(true);
+    expect(isOnClock({ ...view('b'), turn: clock(['a']) })).toBe(false);
+  });
+
+  it('is false without a timer', () => {
+    expect(isOnClock(view('a'))).toBe(false);
   });
 });

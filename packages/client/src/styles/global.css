@@ -112,6 +112,31 @@ h2 {
   background: rgba(255, 107, 107, 0.15);
 }
 
+.badge-clock {
+  font-variant-numeric: tabular-nums;
+}
+
+.badge-clock.is-urgent,
+.turn-clock.is-urgent {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.turn-clock {
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.timer-select .button[aria-pressed='true'] {
+  outline: 2px solid var(--accent);
+}
+
 /* ---------- connection ---------- */
 .connection {
   display: inline-flex;

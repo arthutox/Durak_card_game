@@ -19,6 +19,7 @@ const view = (version: number): PublicView => ({
     passed: [],
     limit: 6,
   },
+  turn: null,
   isFirstBout: true,
   outcome: null,
 });
