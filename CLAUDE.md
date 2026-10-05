@@ -25,6 +25,7 @@ pnpm test                    # vitest in all packages
 pnpm --filter @durak/shared test bout.test.ts -t "<test name>"   # single test (no `--`, or the filter is ignored)
 pnpm lint && pnpm typecheck
 pnpm format:check           # prettier --check packages (CI runs lint, format:check, typecheck, test, build)
+pnpm build && pnpm test:e2e     # browser smoke tests (Playwright) against the built server on :3100; locally `PW_CHANNEL=chrome` reuses installed Chrome, otherwise run `pnpm --filter @durak/e2e exec playwright install chromium` once
 pnpm format                  # prettier --write .
 ```
 
