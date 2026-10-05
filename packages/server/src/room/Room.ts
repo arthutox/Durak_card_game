@@ -226,6 +226,15 @@ export class Room {
     return ok(undefined);
   }
 
+  /** Host removes a seat (lobby only). Returns the seat so the caller can notify its socket. */
+  kick(playerId: PlayerId): Result<Seat, ErrorCode> {
+    if (this.#phase !== 'lobby') return err('GAME_IN_PROGRESS');
+    const index = this.#seats.findIndex((seat) => seat.playerId === playerId);
+    if (index === -1) return err('NOT_JOINED');
+    const [seat] = this.#seats.splice(index, 1);
+    return ok(seat!);
+  }
+
   /** Re-attaches a phone to its seat by session token. Newest connection wins. */
   resume(sessionToken: string, socketId: string): ResumeResult | null {
     const seat = this.#seats.find((s) => s.sessionToken === sessionToken);

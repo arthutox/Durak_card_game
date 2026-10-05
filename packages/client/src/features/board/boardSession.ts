@@ -41,6 +41,16 @@ export type CommandOutcome = ErrorCode | null;
 
 export type HostCommand = 'host:start' | 'host:abort' | 'host:rematch' | 'host:toLobby';
 
+/** Removes a seat from the lobby (e.g. a phone that went away). */
+export async function kickPlayer(playerId: string): Promise<CommandOutcome> {
+  try {
+    const ack = await boardSocket.timeout(ACK_TIMEOUT_MS).emitWithAck('host:kick', { playerId });
+    return ack.ok ? null : ack.error;
+  } catch {
+    return 'INTERNAL';
+  }
+}
+
 export async function sendHostCommand(
   command: HostCommand,
   options: { turnSeconds?: TurnSeconds | null } = {},

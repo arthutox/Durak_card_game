@@ -19,6 +19,9 @@ export const startPayloadSchema = z.strictObject({
 });
 export type StartPayload = z.infer<typeof startPayloadSchema>;
 
+export const kickPayloadSchema = z.strictObject({ playerId: z.string().min(1).max(64) });
+export type KickPayload = z.infer<typeof kickPayloadSchema>;
+
 export const joinPayloadSchema = z.strictObject({
   // Length and uniqueness are lobby rules, checked on the server after normalization.
   nickname: z.string().max(64),

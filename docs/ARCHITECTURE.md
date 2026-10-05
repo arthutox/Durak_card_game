@@ -237,6 +237,7 @@ Every command is acknowledged: `(res: Ack<T>) => void`, where `Ack<T> = { ok: tr
 | `game:pass` | player | `{}` | `{}` | `NOT_AN_ATTACKER`, `PRIORITY_ATTACKER_ONLY`, `TABLE_EMPTY`, `ALREADY_PASSED` |
 | `game:take` | player | `{}` | `{}` | `NOT_DEFENDER`, `NOTHING_TO_TAKE`, `ALREADY_TAKING` |
 | `host:start` | board | `{}` | `{}` | `NOT_ENOUGH_PLAYERS`, `PLAYERS_OFFLINE`, `GAME_IN_PROGRESS` |
+| `host:kick` | board | `{ playerId: PlayerId }` | `{}` | `NOT_JOINED`, `GAME_IN_PROGRESS` |
 | `host:abort` | board | `{}` | `{}` | `NO_GAME` |
 | `host:rematch` | board | `{}` | `{}` | `NOT_FINISHED`, `PLAYERS_OFFLINE` |
 | `host:toLobby` | board | `{}` | `{}` | `NOT_FINISHED` |
@@ -253,6 +254,7 @@ Why there is no `play_card` / `deal_cards` / `successful_defense` from the origi
 |---|---|---|---|
 | `room:state` | everyone | `RoomView` | any change in the lobby, presence or phase |
 | `session:restored` | socket | `{ playerId }` | the handshake token was accepted (reconnect) |
+| `session:kicked` | socket | — | the host removed this phone's seat → same cleanup as `session:invalid`, back to the join form |
 | `session:invalid` | socket | — | unknown token (e.g. the server restarted) → the client clears `localStorage` |
 | `game:state` | `player:<id>` | `PlayerView` | after every game change, on reconnect |
 | `board:state` | `board` | `PublicView` | after every game change, when the board connects |
@@ -279,7 +281,7 @@ Order on the server after a successful command: `applyAction` → store state �
 export interface ClientToServerEvents {
   'lobby:join':  (p: JoinPayload, ack: AckFn<JoinResult>) => void;
   'lobby:leave': (p: EmptyPayload, ack: AckFn<EmptyPayload>) => void;
-  // 'game:attack' | 'game:defend' | 'game:pass' | 'game:take' | 'host:start' | 'host:abort' | 'host:rematch' | 'host:toLobby'
+  // 'game:attack' | 'game:defend' | 'game:pass' | 'game:take' | 'host:start' | 'host:kick' | 'host:abort' | 'host:rematch' | 'host:toLobby'
 }
 
 export interface ServerToClientEvents {

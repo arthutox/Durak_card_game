@@ -4,7 +4,7 @@ import { ERROR_MESSAGES, MAX_PLAYERS, MIN_PLAYERS, TURN_SECONDS_OPTIONS } from '
 import type { TurnSeconds } from '@durak/shared';
 import { PlayerList } from '../../components/PlayerList';
 import { useRoomStore } from '../../store/roomStore';
-import { sendHostCommand } from './boardSession';
+import { kickPlayer, sendHostCommand } from './boardSession';
 
 /** Lobby: QR code to join, the seats, and the Start button. */
 export function BoardLobby() {
@@ -17,6 +17,11 @@ export function BoardLobby() {
 
   const start = async () => {
     const outcome = await sendHostCommand('host:start', { turnSeconds });
+    setError(outcome ? ERROR_MESSAGES[outcome] : null);
+  };
+
+  const kick = async (playerId: string) => {
+    const outcome = await kickPlayer(playerId);
     setError(outcome ? ERROR_MESSAGES[outcome] : null);
   };
 
@@ -44,7 +49,7 @@ export function BoardLobby() {
             {players.length}/{MAX_PLAYERS}
           </span>
         </h2>
-        <PlayerList players={players} />
+        <PlayerList players={players} onKick={(id) => void kick(id)} />
         <div className="timer-select" role="group" aria-label="Turn timer">
           <span className="muted">Turn timer</span>
           {[null, ...TURN_SECONDS_OPTIONS].map((option) => (
