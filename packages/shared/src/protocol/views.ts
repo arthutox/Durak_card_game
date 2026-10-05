@@ -8,6 +8,15 @@ import type { GameOutcome } from '../domain/game.js';
 import type { PlayerColor, PlayerId } from '../domain/player.js';
 import type { TablePair } from '../domain/table.js';
 
+/** The running turn clock; `null` in the view when the host started without a timer. */
+export interface TurnClock {
+  /** Time left on this wait, measured by the server when the snapshot was built. */
+  readonly remainingMs: number;
+  readonly durationMs: number;
+  /** Who the game is waiting for: the defender, the attackers, or the main attacker. */
+  readonly onClock: readonly PlayerId[];
+}
+
 export type RoomPhase = 'lobby' | 'playing' | 'finished';
 
 export interface LobbyPlayerView {
@@ -56,6 +65,7 @@ export interface PublicView {
     readonly limit: number;
   };
   readonly isFirstBout: boolean;
+  readonly turn: TurnClock | null;
   readonly outcome: GameOutcome | null;
 }
 

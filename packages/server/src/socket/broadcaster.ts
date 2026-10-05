@@ -23,9 +23,9 @@ export function createBroadcaster(io: GameServer, room: Room): Broadcaster {
     const { game } = room;
     if (!game) return;
     if (socket.data.role === 'board') {
-      socket.emit('board:state', toPublicView(game, room.seats));
+      socket.emit('board:state', toPublicView(game, room.seats, room.turnView()));
     } else if (socket.data.playerId) {
-      socket.emit('game:state', toPlayerView(game, room.seats, socket.data.playerId));
+      socket.emit('game:state', toPlayerView(game, room.seats, socket.data.playerId, room.turnView()));
     }
   };
 
@@ -36,12 +36,13 @@ export function createBroadcaster(io: GameServer, room: Room): Broadcaster {
     gameState: () => {
       const { game } = room;
       if (!game) return;
-      io.to(CHANNELS.board).emit('board:state', toPublicView(game, room.seats));
+      const turn = room.turnView();
+      io.to(CHANNELS.board).emit('board:state', toPublicView(game, room.seats, turn));
       for (const seat of room.seats) {
         if (seat.socketId === null) continue;
         io.sockets.sockets
           .get(seat.socketId)
-          ?.emit('game:state', toPlayerView(game, room.seats, seat.playerId));
+          ?.emit('game:state', toPlayerView(game, room.seats, seat.playerId, turn));
       }
     },
     gameStateTo: sendTo,

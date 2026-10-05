@@ -3,7 +3,14 @@
  * turned into something a client may see. Other hands, the stock order, the
  * discard contents and session tokens never pass through here.
  */
-import type { GamePlayerView, GameState, PlayerId, PlayerView, PublicView } from '@durak/shared';
+import type {
+  GamePlayerView,
+  GameState,
+  PlayerId,
+  PlayerView,
+  PublicView,
+  TurnClock,
+} from '@durak/shared';
 import type { Seat } from '../room/Room.js';
 
 function playerViews(state: GameState, seats: readonly Seat[]): GamePlayerView[] {
@@ -23,7 +30,11 @@ function playerViews(state: GameState, seats: readonly Seat[]): GamePlayerView[]
   });
 }
 
-export function toPublicView(state: GameState, seats: readonly Seat[]): PublicView {
+export function toPublicView(
+  state: GameState,
+  seats: readonly Seat[],
+  turn: TurnClock | null = null,
+): PublicView {
   const { bout } = state;
   return {
     version: state.version,
@@ -42,6 +53,7 @@ export function toPublicView(state: GameState, seats: readonly Seat[]): PublicVi
       limit: bout.limit,
     },
     isFirstBout: state.isFirstBout,
+    turn,
     outcome: state.outcome,
   };
 }
@@ -50,9 +62,10 @@ export function toPlayerView(
   state: GameState,
   seats: readonly Seat[],
   viewer: PlayerId,
+  turn: TurnClock | null = null,
 ): PlayerView {
   return {
-    ...toPublicView(state, seats),
+    ...toPublicView(state, seats, turn),
     me: { id: viewer, hand: state.hands[viewer] ?? [] },
   };
 }

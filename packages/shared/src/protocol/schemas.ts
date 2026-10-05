@@ -7,10 +7,17 @@ import { z } from 'zod';
 import { isCardId } from '../domain/cards.js';
 import type { CardId } from '../domain/cards.js';
 import { PLAYER_COLORS } from '../domain/player.js';
+import { TURN_SECONDS_OPTIONS } from '../engine/constants.js';
 
 /** Payload of commands that carry no data. Extra keys are rejected. */
 export const emptyPayloadSchema = z.strictObject({});
 export type EmptyPayload = z.infer<typeof emptyPayloadSchema>;
+
+/** `host:start`: an omitted or null `turnSeconds` means no turn timer. */
+export const startPayloadSchema = z.strictObject({
+  turnSeconds: z.literal(TURN_SECONDS_OPTIONS).nullable().optional(),
+});
+export type StartPayload = z.infer<typeof startPayloadSchema>;
 
 export const joinPayloadSchema = z.strictObject({
   // Length and uniqueness are lobby rules, checked on the server after normalization.
