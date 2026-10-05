@@ -466,6 +466,45 @@ h2 {
   font-weight: 600;
 }
 
+.turn-bar {
+  width: min(560px, 100%);
+  margin: 0 auto;
+}
+
+.turn-bar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.turn-bar-seconds {
+  font-size: 40px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.turn-bar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.turn-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s linear;
+}
+
+.turn-bar.is-urgent .turn-bar-seconds {
+  color: var(--danger);
+}
+
+.turn-bar.is-urgent .turn-bar-fill {
+  background: var(--danger);
+}
+
 .overlay {
   position: fixed;
   inset: 0;

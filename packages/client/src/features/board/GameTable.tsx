@@ -2,6 +2,7 @@ import type { PublicView } from '@durak/shared';
 import { CardBack, CardFace } from '../../components/CardFace';
 import { PLAYER_COLOR_HEX } from '../../components/playerColors';
 import { URGENT_SECONDS, useCountdown } from '../../components/useCountdown';
+import { TurnClockBar } from './TurnClockBar';
 import { ROLE_LABEL, seatRole, statusLine } from './boardRoles';
 
 /** The running game as everyone at the table sees it. No hands: only counts. */
@@ -77,6 +78,8 @@ export function GameTable({ game }: { game: PublicView }) {
           )}
         </div>
       </div>
+
+      <TurnClockBar game={game} seconds={seconds} />
 
       <p className="status-line" role="status">
         {statusLine(game)}
